@@ -66,7 +66,7 @@ async function bootstrap() {
     // Add basic auth for Swagger in production
     if (nodeEnv === 'production') {
       app.use(
-        '/api/docs*',
+        ['/api/docs', '/api/docs/(.*)'],
         basicAuth({
           challenge: true,
           users: {
