@@ -46,9 +46,7 @@ Thumbs.db
 .prettierrc
 .eslintrc.js
 eslint.config.mjs
-tsconfig.json
-tsconfig.build.json
-nest-cli.json
+# NOTE: tsconfig.json, tsconfig.build.json, nest-cli.json ARE NEEDED for build!
 
 # Railway
 railway.json
