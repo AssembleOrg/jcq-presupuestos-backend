@@ -40,6 +40,9 @@ RUN pnpm prisma:generate
 # Build application
 RUN pnpm build
 
+# Verify build output
+RUN ls -la dist/ && echo "✅ Build completed successfully!"
+
 # Remove dev dependencies
 RUN pnpm prune --prod
 
