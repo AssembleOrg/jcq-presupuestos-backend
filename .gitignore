@@ -2,10 +2,9 @@
 /dist
 /node_modules
 /build
-**.md
-pnpm-lock.yaml
 # Logs
 logs
+*.md
 *.log
 npm-debug.log*
 pnpm-debug.log*
