@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SUBADMIN
+  MANAGER
+}
+
+enum ProjectStatus {
+  BUDGET      // Borrador/presupuesto
+  ACTIVE      // Proyecto aceptado
+  IN_PROCESS  // En proceso
+  FINISHED    // Finalizado
+  DELETED     // Eliminado (soft delete lógico)
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole  @default(MANAGER)
+  isActive  Boolean   @default(true)
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  audits    AuditLog[]
+
+  @@map("users")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action      String   // CREATE, UPDATE, DELETE, etc.
+  entity      String   // Entity name (User, Budget, etc.)
+  entityId    String   // ID of the affected entity
+  changes     Json?    // Store the actual changes
+  
+  ip          String
+  location    String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Client {
+  id        String    @id @default(uuid())
+  fullname  String
+  phone     String
+  cuit      String?   // CUIT sin formato, solo números o string
+  dni       String?   // DNI - uno de los dos debe ser obligatorio (validar en DTO)
+  
+  projects  Project[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("clients")
+  @@index([cuit])
+  @@index([dni])
+}
+
+model Project {
+  id          String         @id @default(uuid())
+  amount      Float          // Total a pagar
+  totalPaid   Float          @default(0) // Total pagado hasta ahora
+  rest        Float          // Restante a pagar (se puede calcular)
+  
+  status      ProjectStatus  @default(BUDGET) // Estado del proyecto
+  usdPrice    Json?          // Precio del dólar cuando se activa (JSONB)
+  
+  clientId    String
+  client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  
+  // Ubicación del proyecto (compatible con Leaflet y Google Maps)
+  locationAddress  String?   // Dirección legible
+  locationLat      Float?    // Latitud
+  locationLng      Float?    // Longitud
+  
+  workers     Int            // Cantidad de personal necesario
+  dateInit    DateTime       // Fecha de inicio del proyecto
+  dateEnd     DateTime       // Fecha de finalización del proyecto
+  
+  paids       Paid[]         // Pagos realizados
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+
+  @@map("projects")
+  @@index([clientId])
+  @@index([status])
+  @@index([dateInit])
+  @@index([dateEnd])
+}
+
+model Paid {
+  id          String    @id @default(uuid())
+  amount      Float     // Monto del pago
+  date        DateTime  // Fecha del pago
+  bill        String    @default("") // Código de factura relacionada
+  
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@map("paids")
+  @@index([projectId])
+  @@index([date])
+}

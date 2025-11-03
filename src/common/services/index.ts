@@ -1,0 +1,2 @@
+export * from './dolar.service';
+
