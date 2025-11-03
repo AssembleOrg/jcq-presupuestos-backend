@@ -2,9 +2,13 @@
 /dist
 /node_modules
 /build
+
+# Documentation (optional, uncomment to ignore)
+*.md
+!README.md
+
 # Logs
 logs
-*.md
 *.log
 npm-debug.log*
 pnpm-debug.log*
