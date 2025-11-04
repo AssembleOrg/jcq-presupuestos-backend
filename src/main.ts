@@ -65,14 +65,19 @@ async function bootstrap() {
   if (swaggerEnabled || nodeEnv === 'development') {
     // Add basic auth for Swagger in production
     if (nodeEnv === 'production') {
+      // Apply basic auth to all Swagger routes
       app.use(
-        ['/api/docs', '/api/docs/(.*)'],
-        basicAuth({
-          challenge: true,
-          users: {
-            admin: swaggerPassword || 'admin123',
-          },
-        }),
+        (req, res, next) => {
+          if (req.path.startsWith('/api/docs')) {
+            return basicAuth({
+              challenge: true,
+              users: {
+                admin: swaggerPassword || 'admin123',
+              },
+            })(req, res, next);
+          }
+          next();
+        },
       );
     }
 
