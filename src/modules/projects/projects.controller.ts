@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto, UpdateProjectDto, ProjectResponseDto, ChangeProjectStatusDto, FilterProjectDto } from './dto';
+import { CreateProjectDto, UpdateProjectDto, ProjectResponseDto, ChangeProjectStatusDto, FilterProjectDto, DashboardResponseDto } from './dto';
 import { PaginationQueryDto } from '~/modules/users/dto';
 import { ProjectStatus } from '@prisma/client';
 import { JwtAuthGuard, RolesGuard } from '~/common/guards';
@@ -50,6 +50,21 @@ export class ProjectsController {
   })
   async create(@Body() createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
     return this.projectsService.create(createProjectDto);
+  }
+
+  @Get('dashboard')
+  @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+  @ApiOperation({ 
+    summary: 'Obtener datos del dashboard',
+    description: 'Retorna estadísticas generales y los últimos 5 proyectos recientes para la vista del dashboard'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Datos del dashboard',
+    type: DashboardResponseDto,
+  })
+  async getDashboard(): Promise<DashboardResponseDto> {
+    return this.projectsService.getDashboard();
   }
 
   @Get()

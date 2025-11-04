@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '~/prisma';
-import { CreateProjectDto, UpdateProjectDto, ProjectResponseDto, ChangeProjectStatusDto, FilterProjectDto } from './dto';
+import { CreateProjectDto, UpdateProjectDto, ProjectResponseDto, ChangeProjectStatusDto, FilterProjectDto, DashboardResponseDto } from './dto';
 import { PaginationQueryDto } from '~/modules/users/dto';
 import { plainToInstance } from 'class-transformer';
 import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces';
@@ -307,6 +307,81 @@ export class ProjectsService {
     });
 
     return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
+  }
+
+  async getDashboard(): Promise<DashboardResponseDto> {
+    // Obtener estadísticas en paralelo
+    const [activeProjectsCount, totalClientsCount, projectsForStats, recentProjects] = await Promise.all([
+      // Total de proyectos activos
+      this.prisma.project.count({
+        where: {
+          status: ProjectStatus.ACTIVE,
+          deletedAt: null,
+        },
+      }),
+      
+      // Total de clientes
+      this.prisma.client.count({
+        where: { deletedAt: null },
+      }),
+      
+      // Proyectos para calcular totales (solo activos)
+      this.prisma.project.findMany({
+        where: {
+          status: ProjectStatus.ACTIVE,
+          deletedAt: null,
+        },
+        select: {
+          totalPaid: true,
+          rest: true,
+        },
+      }),
+      
+      // Últimos 5 proyectos recientes (ordenados por fecha de creación)
+      this.prisma.project.findMany({
+        where: { deletedAt: null },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          amount: true,
+          totalPaid: true,
+          locationAddress: true,
+          client: {
+            select: {
+              fullname: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Calcular total cobrado y pendiente
+    const totalCollected = projectsForStats.reduce((sum, project) => sum + project.totalPaid, 0);
+    const totalPending = projectsForStats.reduce((sum, project) => sum + project.rest, 0);
+
+    // Mapear proyectos recientes
+    const recentProjectsFormatted = recentProjects.map(project => ({
+      id: project.id,
+      clientName: project.client.fullname,
+      locationAddress: project.locationAddress || 'Sin dirección',
+      amount: project.amount,
+      totalPaid: project.totalPaid,
+    }));
+
+    return plainToInstance(
+      DashboardResponseDto,
+      {
+        stats: {
+          activeProjects: activeProjectsCount,
+          totalClients: totalClientsCount,
+          totalCollected,
+          totalPending,
+        },
+        recentProjects: recentProjectsFormatted,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 }
 
