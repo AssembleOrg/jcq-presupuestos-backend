@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
@@ -49,11 +49,11 @@ async function bootstrap() {
         const messages = errors.map((error) => {
           return Object.values(error.constraints || {}).join(', ');
         });
-        return {
+        return new BadRequestException({
           message: messages,
           error: 'Error de validación',
-          statusCode: 422, // Unprocessable Entity (más apropiado que 400)
-        };
+          statusCode: 400,
+        });
       },
     }),
   );
