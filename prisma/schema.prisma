@@ -90,6 +90,7 @@ model Project {
   
   status      ProjectStatus  @default(BUDGET) // Estado del proyecto
   usdPrice    Json?          // Precio del dólar cuando se activa (JSONB)
+  event       String?        // Evento relacionado al proyecto
   
   clientId    String
   client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)

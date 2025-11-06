@@ -64,5 +64,13 @@ export class UpdateProjectDto {
   @IsDateString({}, { message: 'Fecha de finalización debe ser una fecha válida' })
   @IsOptional()
   dateEnd?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Evento relacionado al proyecto',
+    example: 'Construcción de edificio residencial'
+  })
+  @IsString({ message: 'Evento debe ser texto' })
+  @IsOptional()
+  event?: string;
 }
 

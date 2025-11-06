@@ -28,6 +28,10 @@ export class ProjectResponseDto {
   @Expose()
   usdPrice?: any;
 
+  @ApiPropertyOptional({ description: 'Evento relacionado al proyecto' })
+  @Expose()
+  event?: string;
+
   @ApiProperty({ description: 'ID del cliente' })
   @Expose()
   clientId: string;
