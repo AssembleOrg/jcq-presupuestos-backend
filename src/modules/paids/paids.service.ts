@@ -8,13 +8,58 @@ import { DateTime } from 'luxon';
 
 @Injectable()
 export class PaidsService {
+  private readonly NUMBER_PREFIX = '001';
+  private readonly NUMBER_PADDING = 5; // 00001, 00002, etc.
+
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Genera el siguiente número secuencial para un pago
+   * Formato: 001-00001, 001-00002, etc.
+   */
+  private async generateNextNumber(): Promise<string> {
+    // Buscar el último número creado (incluyendo soft deletes para mantener secuencia)
+    const lastPaid = await this.prisma.paid.findFirst({
+      where: {
+        number: {
+          startsWith: `${this.NUMBER_PREFIX}-`,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        number: true,
+      },
+    });
+
+    let nextSequence = 1;
+
+    if (lastPaid && lastPaid.number) {
+      // Extraer el número después del "-"
+      const parts = lastPaid.number.split('-');
+      if (parts.length === 2) {
+        const lastSequence = parseInt(parts[1], 10);
+        if (!isNaN(lastSequence)) {
+          nextSequence = lastSequence + 1;
+        }
+      }
+    }
+
+    // Formatear con padding de ceros
+    const sequenceStr = nextSequence.toString().padStart(this.NUMBER_PADDING, '0');
+    return `${this.NUMBER_PREFIX}-${sequenceStr}`;
+  }
 
   private buildWhereClause(filters: FilterPaidDto) {
     const where: any = { deletedAt: null };
 
     if (filters.projectId) {
       where.projectId = filters.projectId;
+    }
+
+    if (filters.number) {
+      where.number = { contains: filters.number, mode: 'insensitive' };
     }
 
     if (filters.bill) {
@@ -64,9 +109,13 @@ export class PaidsService {
       );
     }
 
+    // Generar número secuencial automáticamente
+    const number = await this.generateNextNumber();
+
     const paid = await this.prisma.paid.create({
       data: {
         ...createPaidDto,
+        number,
         date: new Date(createPaidDto.date),
       },
       include: {

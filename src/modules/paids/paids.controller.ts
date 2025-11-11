@@ -55,9 +55,10 @@ export class PaidsController {
   @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
   @ApiOperation({ 
     summary: 'Obtener todos los pagos (sin paginación)',
-    description: 'Filtra por: projectId (exacto), bill (parcial), amount (rango), date (rango)'
+    description: 'Filtra por: projectId (exacto), number (parcial), bill (parcial), amount (rango), date (rango)'
   })
   @ApiQuery({ name: 'projectId', required: false, type: String, description: 'Filtrar por ID de proyecto' })
+  @ApiQuery({ name: 'number', required: false, type: String, description: 'Buscar por número secuencial (parcial)' })
   @ApiQuery({ name: 'bill', required: false, type: String, description: 'Buscar por código de factura' })
   @ApiQuery({ name: 'amountMin', required: false, type: Number, description: 'Monto mínimo' })
   @ApiQuery({ name: 'amountMax', required: false, type: Number, description: 'Monto máximo' })
@@ -76,11 +77,12 @@ export class PaidsController {
   @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
   @ApiOperation({ 
     summary: 'Obtener pagos con paginación',
-    description: 'Filtra por: projectId (exacto), bill (parcial), amount (rango), date (rango)'
+    description: 'Filtra por: projectId (exacto), number (parcial), bill (parcial), amount (rango), date (rango)'
   })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página', example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Registros por página', example: 10 })
   @ApiQuery({ name: 'projectId', required: false, type: String, description: 'Filtrar por ID de proyecto' })
+  @ApiQuery({ name: 'number', required: false, type: String, description: 'Buscar por número secuencial (parcial)' })
   @ApiQuery({ name: 'bill', required: false, type: String, description: 'Buscar por código de factura' })
   @ApiQuery({ name: 'amountMin', required: false, type: Number, description: 'Monto mínimo' })
   @ApiQuery({ name: 'amountMax', required: false, type: Number, description: 'Monto máximo' })

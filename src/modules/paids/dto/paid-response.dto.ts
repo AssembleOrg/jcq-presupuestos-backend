@@ -7,6 +7,10 @@ export class PaidResponseDto {
   @Expose()
   id: string;
 
+  @ApiProperty({ description: 'Número secuencial del pago', example: '001-00001' })
+  @Expose()
+  number: string;
+
   @ApiProperty({ description: 'Monto del pago' })
   @Expose()
   amount: number;

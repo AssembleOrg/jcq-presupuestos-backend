@@ -119,6 +119,7 @@ model Project {
 
 model Paid {
   id          String    @id @default(uuid())
+  number      String?   @unique // Numeración secuencial: 001-00001
   amount      Float     // Monto del pago
   date        DateTime  // Fecha del pago
   bill        String    @default("") // Código de factura relacionada
@@ -133,4 +134,5 @@ model Paid {
   @@map("paids")
   @@index([projectId])
   @@index([date])
+  @@index([number])
 }

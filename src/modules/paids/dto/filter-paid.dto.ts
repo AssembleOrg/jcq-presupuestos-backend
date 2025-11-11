@@ -12,6 +12,14 @@ export class FilterPaidDto {
   projectId?: string;
 
   @ApiPropertyOptional({ 
+    description: 'Buscar por número secuencial (búsqueda parcial, case insensitive)',
+    example: '001-00001'
+  })
+  @IsString({ message: 'Número debe ser texto' })
+  @IsOptional()
+  number?: string;
+
+  @ApiPropertyOptional({ 
     description: 'Buscar por código de factura (búsqueda parcial)',
     example: 'FC-2025'
   })
