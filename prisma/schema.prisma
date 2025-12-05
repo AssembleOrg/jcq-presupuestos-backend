@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") 
 }
 
 enum UserRole {
@@ -135,4 +135,42 @@ model Paid {
   @@index([projectId])
   @@index([date])
   @@index([number])
+}
+
+model Staff{
+  id        String    @id @default(uuid())
+  firstName String
+  lastName  String
+  dni       String?   // DNI - uno de los dos debe ser obligatorio (validar en DTO) 
+  cuit      String?   // CUIT sin formato, solo números o string
+  category  String    // Categoría del personal 
+
+  workRecords  WorkRecord[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model WorkRecord {
+  id             String    @id @default(uuid())
+  
+  valuePerHour   Float     // "Valor por Hora"
+  advance        Float     // "Adelanto"
+  total          Float     // Total = (Horas Totales X Valor por Hora) - Adelanto
+  
+  hoursMonday    Float
+  hoursTuesday   Float
+  hoursWednesday Float
+  hoursThursday  Float
+  hoursFriday    Float
+  
+  staffId        String
+  staff          Staff     @relation(fields: [staffId], references: [id])
+  
+  startDate      DateTime // Por ejemplo, el lunes de la semana
+  endDate        DateTime // Por ejemplo, el viernes o domingo de la semana. Sirve por si quiere la liquidacion de un mes completo en algun momento
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

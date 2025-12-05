@@ -15,6 +15,7 @@ import { JwtAuthGuard } from './common/guards';
 import { ResponseInterceptor } from './common/interceptors';
 import { AllExceptionsFilter } from './common/filters';
 import { HttpLoggerMiddleware, ErrorTrackerInterceptor } from './common/logger';
+import { StaffModule } from './modules/staff';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { HttpLoggerMiddleware, ErrorTrackerInterceptor } from './common/logger';
     ClientsModule,
     ProjectsModule,
     PaidsModule,
+    StaffModule
   ],
   controllers: [AppController],
   providers: [
