@@ -11,7 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
-import { CreateStaffDto, StaffResponseDto, CreateWorkRecordDto, UpdateWorkRecordDto, FilterStaffDto, WorkRecordResponseDto } from './dto';
+import { CreateStaffDto, StaffResponseDto, CreateWorkRecordDto, UpdateWorkRecordDto, FilterStaffDto, WorkRecordResponseDto, UpdateStaffDto } from './dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { AuditInterceptor } from '~/common/interceptors';
@@ -90,5 +90,13 @@ export class StaffController {
   @ApiOperation({ summary: 'Obtener historial de pagos (Para el PDF)' })
   getStaffRecords(@Param('staffId') staffId: string) {
     return this.staffService.getWorkRecordsByStaff(staffId);
+  }
+
+  @Patch(':id') // La Ruta seria: /api/staff/uuid-del-empleado
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Auditory({ action: 'UPDATE', entity: 'Staff' })
+  @ApiOperation({ summary: 'Actualizar datos del empleado' })
+  updateStaff(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto ) {
+  return this.staffService.updateStaff(id, updateStaffDto);
   }
 }

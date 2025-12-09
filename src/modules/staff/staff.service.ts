@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '~/prisma';
-import { CreateStaffDto, CreateWorkRecordDto, StaffResponseDto, UpdateWorkRecordDto, WorkRecordResponseDto } from './dto';
+import { CreateStaffDto, CreateWorkRecordDto, StaffResponseDto, UpdateStaffDto, UpdateWorkRecordDto, WorkRecordResponseDto } from './dto';
 import { plainToInstance } from 'class-transformer';
 import { FilterStaffDto } from './dto/filter-staff.dto';
 
@@ -108,6 +108,20 @@ export class StaffService {
       },
     });
   }
+
+  async updateStaff(id: string, data: UpdateStaffDto) {
+  // Verificamos si existe
+  const staff = await this.prisma.staff.findUnique({ where: { id } });
+  if (!staff) throw new NotFoundException(`Empleado con ID ${id} no encontrado`);
+
+  // Actualizamos
+  const updated = await this.prisma.staff.update({
+    where: { id },
+    data: data, // Prisma solo actualiza los campos que vengan en data
+  });
+
+  return plainToInstance(StaffResponseDto, updated, { excludeExtraneousValues: true });
+}
 
   // 3. obtener registros de horas. 
   async getWorkRecordsByStaff(staffId: string) {
