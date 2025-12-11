@@ -68,7 +68,7 @@ export class StaffController {
   @ApiOperation({ summary: 'Crear un registro de horas' })
   @ApiResponse({
       status: 201,
-      description: 'Cliente creado exitosamente',
+      description: 'Registro creado exitosamente',
       type: WorkRecordResponseDto,
     })
   async createWorkRecord(@Body() createWorkRecordDto: CreateWorkRecordDto): Promise<WorkRecordResponseDto> {
@@ -92,7 +92,7 @@ export class StaffController {
     return this.staffService.getWorkRecordsByStaff(staffId);
   }
 
-  @Patch(':id') // La Ruta seria: /api/staff/uuid-del-empleado
+  @Patch(':id') 
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @Auditory({ action: 'UPDATE', entity: 'Staff' })
   @ApiOperation({ summary: 'Actualizar datos del empleado' })

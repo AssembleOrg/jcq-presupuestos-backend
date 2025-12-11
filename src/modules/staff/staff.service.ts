@@ -110,11 +110,10 @@ export class StaffService {
   }
 
   async updateStaff(id: string, data: UpdateStaffDto) {
-  // Verificamos si existe
   const staff = await this.prisma.staff.findUnique({ where: { id } });
   if (!staff) throw new NotFoundException(`Empleado con ID ${id} no encontrado`);
 
-  // Actualizamos
+  // Actualizacion
   const updated = await this.prisma.staff.update({
     where: { id },
     data: data, // Prisma solo actualiza los campos que vengan en data
@@ -122,12 +121,15 @@ export class StaffService {
 
   return plainToInstance(StaffResponseDto, updated, { excludeExtraneousValues: true });
 }
-
-  // 3. obtener registros de horas. 
+ 
   async getWorkRecordsByStaff(staffId: string) {
-    return this.prisma.workRecord.findMany({
-      where: { staffId },
-      orderBy: { startDate: 'desc' }, // Las más recientes primero
-    });
-  }
+  return this.prisma.workRecord.findMany({
+    where: { staffId },
+    orderBy: [
+      { startDate: 'desc' }, 
+      { createdAt: 'desc' }  
+    ],
+    take: 20,
+  });
+}
 }
