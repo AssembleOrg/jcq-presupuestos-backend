@@ -99,4 +99,21 @@ export class StaffController {
   updateStaff(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto ) {
   return this.staffService.updateStaff(id, updateStaffDto);
   }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUBADMIN)
+  @Auditory({ action: 'DELETE', entity: 'Staff' })
+  @ApiOperation({ summary: 'Eliminar un empleado (soft delete)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Empleado eliminado exitosamente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Empleado no encontrado',
+  })
+  async removeStaff(@Param('id') id: string) {
+    return this.staffService.removeStaff(id);
+  }
+
 }

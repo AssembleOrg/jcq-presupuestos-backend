@@ -3,6 +3,7 @@ import { PrismaService } from '~/prisma';
 import { CreateStaffDto, CreateWorkRecordDto, StaffResponseDto, UpdateStaffDto, UpdateWorkRecordDto, WorkRecordResponseDto } from './dto';
 import { plainToInstance } from 'class-transformer';
 import { FilterStaffDto } from './dto/filter-staff.dto';
+import { DateTime } from 'luxon';
 
 
 @Injectable()
@@ -132,4 +133,37 @@ export class StaffService {
     take: 20,
   });
 }
+
+async deleteWorkRecord(staffId: string) //SOFT DELETE
+{
+await this.prisma.workRecord.updateMany({
+  where: {staffId},
+    data:{
+      deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate(),
+    },
+})
+return {message:'Registros de horas eliminado exitosamente'};
+}
+
+async removeStaff(id:string):Promise<{ message: string }> //elimina tambien los WorkRecords
+ {
+  const staff = await this.prisma.staff.findFirst({
+    where:{
+      id,
+      deletedAt: null
+    },
+   });
+
+  if(!staff){
+      throw new NotFoundException('Empleado no encontrado');
+    }
+  await this.deleteWorkRecord(id)
+  await this.prisma.staff.update({
+    where: { id },
+      data: {
+        deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate(),
+      },
+    });
+    return {message:'Empleado eliminado exitosamente'};
+  }
 }
