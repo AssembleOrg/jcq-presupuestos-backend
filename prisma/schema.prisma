@@ -91,6 +91,7 @@ model Project {
   status      ProjectStatus  @default(BUDGET) // Estado del proyecto
   usdPrice    Json?          // Precio del dólar cuando se activa (JSONB)
   event       String?        // Evento relacionado al proyecto
+  items       ProjectItem[]
   
   clientId    String
   client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -174,4 +175,41 @@ model WorkRecord {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   deletedAt DateTime?
+}
+
+model Structure{
+  id             String    @id @default(uuid())
+  name           String 
+  category       StructureCategory
+  stock          Float      //STOCK DISPONIBLE
+  measure        String?    //Ej: "1,85x1M", "6,40mts", "30x30cm"
+  description    String?    //Descripcion de la estructura
+
+  items           ProjectItem[]  //Mapea a los proyectos que usan esta estructura
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt DateTime? 
+}
+
+model ProjectItem {
+  id          String    @id @default(uuid())
+  quantity    Int       // Cantidad asignada a este proyecto específico
+  
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  structureId String
+  structure   Structure @relation(fields: [structureId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([projectId, structureId])
+}
+
+enum StructureCategory {
+  CATEGORY_A
+  CATEGORY_B
+  CATEGORY_C
 }

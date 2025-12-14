@@ -17,6 +17,7 @@ import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { AuditInterceptor } from '~/common/interceptors';
 import { Roles, Auditory } from '~/common/decorators';
 import { UserRole } from '@prisma/client';
+import { PaginationQueryDto } from '~/modules/users/dto';
 
 @ApiTags('Staff')
 @ApiBearerAuth()
@@ -61,6 +62,29 @@ export class StaffController {
   async findAll(@Query() filters: FilterStaffDto): Promise<StaffResponseDto[]> {
   return this.staffService.getAllStaff(filters);
   }
+
+  @Get('pagination')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+    @ApiOperation({ 
+      summary: 'Obtener empleados con paginación',
+      description: 'Filtra por: nombre, apellido, cuit, dni (todas búsquedas parciales, case insensitive)'
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página', example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Registros por página', example: 10 })
+    @ApiQuery({ name: 'firstName', required: false, type: String, description: 'Buscar por nombre (parcial)' })
+    @ApiQuery({ name: 'lastName', required: false, type: String, description: 'Buscar por apellido (parcial)' })
+    @ApiQuery({ name: 'cuit', required: false, type: String, description: 'Buscar por CUIT (parcial)' })
+    @ApiQuery({ name: 'dni', required: false, type: String, description: 'Buscar por DNI (parcial)' })
+    @ApiResponse({
+      status: 200,
+      description: 'Lista paginada de empleados filtrados',
+    })
+    async findAllPaginated(
+      @Query() paginationQuery: PaginationQueryDto,
+      @Query() filters: FilterStaffDto
+    ) {
+      return this.staffService.findAllPaginated(paginationQuery, filters);
+    }
 
   @Post('work-record')
   @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)

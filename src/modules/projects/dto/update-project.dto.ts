@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsString, IsOptional, IsInt, Min, IsDateString } from 'class-validator';
+import { IsNumber, IsString, IsOptional, IsInt, Min, IsDateString, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ProjectStructureDto } from './project-structure.dto';
 
 export class UpdateProjectDto {
   @ApiPropertyOptional({ 
@@ -72,5 +73,12 @@ export class UpdateProjectDto {
   @IsString({ message: 'Evento debe ser texto' })
   @IsOptional()
   event?: string;
+
+  @ApiPropertyOptional({ type: [ProjectStructureDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectStructureDto)
+  structures?: ProjectStructureDto[];
 }
 

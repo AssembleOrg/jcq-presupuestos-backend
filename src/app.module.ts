@@ -16,6 +16,7 @@ import { ResponseInterceptor } from './common/interceptors';
 import { AllExceptionsFilter } from './common/filters';
 import { HttpLoggerMiddleware, ErrorTrackerInterceptor } from './common/logger';
 import { StaffModule } from './modules/staff';
+import { StructuresModule } from './modules/structures';
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { StaffModule } from './modules/staff';
     ClientsModule,
     ProjectsModule,
     PaidsModule,
-    StaffModule
+    StaffModule,
+    StructuresModule,
   ],
   controllers: [AppController],
   providers: [

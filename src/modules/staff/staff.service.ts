@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '~/prisma';
-import { CreateStaffDto, CreateWorkRecordDto, StaffResponseDto, UpdateStaffDto, UpdateWorkRecordDto, WorkRecordResponseDto } from './dto';
+import { CreateStaffDto, CreateWorkRecordDto, StaffResponseDto, UpdateStaffDto, UpdateWorkRecordDto, WorkRecordResponseDto, FilterStaffDto } from './dto';
 import { plainToInstance } from 'class-transformer';
-import { FilterStaffDto } from './dto/filter-staff.dto';
 import { DateTime } from 'luxon';
+import { PaginationQueryDto } from '~/modules/users/dto';
+import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces';
 
 
 @Injectable()
@@ -53,6 +54,30 @@ export class StaffService {
       });
   
       return plainToInstance(StaffResponseDto, workers, { excludeExtraneousValues: true });
+    }
+
+  async findAllPaginated(
+      paginationQuery: PaginationQueryDto,
+      filters: FilterStaffDto = {}
+    ): Promise<PaginatedResponseDto<StaffResponseDto>> {
+      const { page = 1, limit = 10 } = paginationQuery;
+      const skip = (page - 1) * limit;
+      const where = this.buildWhereClause(filters);
+  
+      const [clients, total] = await Promise.all([
+        this.prisma.client.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.client.count({ where }),
+      ]);
+  
+      const data = plainToInstance(StaffResponseDto, clients, { excludeExtraneousValues: true });
+      const meta = createPaginationMeta(page, limit, total);
+  
+      return { data, meta };
     }
 
   // 1. planilla de horas (Boton "Cargar Horas")

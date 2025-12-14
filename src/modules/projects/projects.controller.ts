@@ -19,6 +19,7 @@ import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { Roles, Auditory } from '~/common/decorators';
 import { UserRole } from '@prisma/client';
 import { AuditInterceptor } from '~/common/interceptors';
+import { CreateProjectItemDto, ProjectItemResponseDto } from '~/modules/structures/dto';
 
 @ApiTags('Proyectos')
 @ApiBearerAuth()
@@ -204,5 +205,54 @@ export class ProjectsController {
   ): Promise<ProjectResponseDto> {
     return this.projectsService.changeStatus(id, changeStatusDto);
   }
-}
 
+  @Post(':id/items')
+  @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+  @Auditory({ action: 'UPDATE', entity: 'Project' }) 
+  @ApiOperation({ summary: 'Asignar o actualizar stock de estructura a un proyecto' })
+  @ApiResponse({
+    status: 201,
+    description: 'Item asignado correctamente',
+    type: ProjectItemResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Stock insuficiente',
+  })
+  async addProjectItem(
+    @Param('id') id: string,
+    @Body() createItemDto: CreateProjectItemDto,
+  ): Promise<ProjectItemResponseDto> {
+    return this.projectsService.addStructure(id, createItemDto);
+  }
+
+  @Get(':id/items')
+  @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Obtener todas las estructuras asignadas a un proyecto' })
+  async getProjectItems(@Param('id') id:string): Promise<ProjectItemResponseDto[]> {
+    return this.projectsService.findProjectItems(id);
+  }
+
+  @Patch(':projectId/items/:structureId')
+  @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+  @Auditory({ action: 'UPDATE', entity: 'ProjectItem' }) 
+  @ApiOperation({ summary: 'Actualizar la cantidad de una estructura en el proyecto' })
+  async updateProjectItem(
+    @Param('projectId') projectId: string,
+    @Param('structureId') structureId: string,
+    @Body('quantity') quantity: number, 
+  ): Promise<ProjectItemResponseDto> {
+    return this.projectsService.updateProjectItem(projectId, structureId, quantity);
+  }
+
+  @Delete(':projectId/items/:structureId')
+  @Roles(UserRole.ADMIN, UserRole.SUBADMIN)
+  @Auditory({ action: 'DELETE', entity: 'ProjectItem' })
+  @ApiOperation({ summary: 'Quitar una estructura del proyecto' })
+  async removeProjectItem(
+    @Param('projectId') projectId: string,
+    @Param('structureId') structureId: string,
+  ) {
+    return this.projectsService.removeProjectItem(projectId, structureId);
+  }
+}

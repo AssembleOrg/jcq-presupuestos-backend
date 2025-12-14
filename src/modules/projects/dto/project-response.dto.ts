@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
+import { Expose, Type, Transform } from 'class-transformer'; 
 import { ClientResponseDto } from '~/modules/clients/dto';
 import { ProjectStatus } from '@prisma/client';
+import { ProjectItemResponseDto } from '~/modules/structures/dto';
 
 export class ProjectResponseDto {
   @ApiProperty({ description: 'ID del proyecto' })
@@ -65,6 +66,11 @@ export class ProjectResponseDto {
   @Expose()
   dateEnd: Date;
 
+  @ApiProperty({ description: 'Alias de items para el frontend', type: [ProjectItemResponseDto] })
+  @Expose()
+  @Transform(({ obj }) => obj.items || []) 
+  structures: ProjectItemResponseDto[];
+
   @ApiProperty({ description: 'Fecha de creación' })
   @Expose()
   createdAt: Date;
@@ -77,4 +83,3 @@ export class ProjectResponseDto {
   @Expose()
   deletedAt?: Date;
 }
-
