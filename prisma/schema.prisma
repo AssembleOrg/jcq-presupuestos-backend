@@ -72,6 +72,7 @@ model Client {
   dni       String?   // DNI - uno de los dos debe ser obligatorio (validar en DTO)
   
   projects  Project[]
+  budgets   Budget[]
   
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -186,6 +187,7 @@ model Structure{
   description    String?    //Descripcion de la estructura
 
   items           ProjectItem[]  //Mapea a los proyectos que usan esta estructura
+  budgetItems     BudgetItem[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -213,3 +215,56 @@ enum StructureCategory {
   CATEGORY_B
   CATEGORY_C
 }
+
+model Budget {
+  id             String    @id @default(uuid())
+  
+  date           DateTime  @default(now()) 
+  
+  clientId       String?
+  client         Client?   @relation(fields: [clientId], references: [id])
+  
+  manualClientName String?
+  manualClientCuit String? 
+  
+  items          BudgetItem[]
+
+  netAmount      Float     // Valor neto (Suma de items * precio)
+  
+  hasIva         Boolean   @default(false)
+  ivaPercentage  Float?    // 0, 5, 10.5, 21 (Se guarda el % seleccionado)
+  ivaValue       Float?    // El valor monetario calculado del IVA
+  
+  hasIibb        Boolean   @default(false)
+  iibbPercentage Float?    // 1, 2, 3, 4, 5 (Se guarda el % seleccionado)
+  iibbValue      Float?    // El valor monetario calculado de IIBB
+
+  totalAmount    Float     // Total Final = netAmount + iva + iibb
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime? 
+  
+  @@map("budgets")
+}
+
+model BudgetItem {
+  id             String    @id @default(uuid())
+  
+  quantity       Int       
+     
+  budgetId       String
+  budget         Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  structureId    String?
+  structure      Structure? @relation(fields: [structureId], references: [id])
+  
+  manualName     String?   
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@map("budget_items")
+}
+

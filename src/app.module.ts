@@ -17,6 +17,7 @@ import { AllExceptionsFilter } from './common/filters';
 import { HttpLoggerMiddleware, ErrorTrackerInterceptor } from './common/logger';
 import { StaffModule } from './modules/staff';
 import { StructuresModule } from './modules/structures';
+import { BudgetsModule } from './modules/budgets';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { StructuresModule } from './modules/structures';
     PaidsModule,
     StaffModule,
     StructuresModule,
+    BudgetsModule,
   ],
   controllers: [AppController],
   providers: [

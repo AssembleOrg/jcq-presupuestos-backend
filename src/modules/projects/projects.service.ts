@@ -141,7 +141,6 @@ export class ProjectsService {
       where,
       include: { 
         client: true,
-        // ESTO ES OBLIGATORIO PARA QUE FUNCIONE:
         items: {
           include: {
             structure: true // Necesitamos el nombre de la estructura
@@ -167,7 +166,6 @@ export class ProjectsService {
         where,
         include: { 
           client: true,
-          // ESTO ES OBLIGATORIO TAMBIÉN AQUÍ:
           items: {
             include: {
               structure: true
@@ -198,7 +196,7 @@ export class ProjectsService {
         paids: true,
         items: {
           include: {
-            structure: true // Para tener el nombre y la medida del ítem
+            structure: true // Para tener el nombre y la medida del item
           }
         }
       },

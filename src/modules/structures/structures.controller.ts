@@ -11,14 +11,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { StructuresService } from './structures.service';
-import { CreateStructureDto,FilterStructureDto,StructureResponseDto,UpdateStructureDto, CreateProjectItemDto, ProjectItemResponseDto } from './dto';
+import { CreateStructureDto,FilterStructureDto,StructureResponseDto,UpdateStructureDto,} from './dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { AuditInterceptor } from '~/common/interceptors';
 import { Roles, Auditory } from '~/common/decorators';
 import { UserRole } from '@prisma/client';
 import { PaginationQueryDto } from '~/modules/users/dto';
-import { ProjectsService } from '../projects/projects.service';
 
 
 @ApiTags('Estructuras')
