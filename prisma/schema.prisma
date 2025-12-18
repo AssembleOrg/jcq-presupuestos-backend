@@ -94,6 +94,12 @@ model Project {
   event       String?        // Evento relacionado al proyecto
   items       ProjectItem[]
   
+  collaboratorId  String?
+  collaborator    Collaborator?  @relation(fields: [collaboratorId], references: [id], onDelete: Restrict)
+
+  collabWorkersCount Int?        // Cuántos empleados aportó específicamente aca
+  collabValuePerHour Float?      // Cuánto se acordó pagar por hora en este proyecto
+
   clientId    String
   client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
   
@@ -266,5 +272,27 @@ model BudgetItem {
   deletedAt      DateTime?
 
   @@map("budget_items")
+}
+
+model Collaborator{                               //VALIDACIONES MUY IMPORTANTES EN DTO
+  id             String    @id @default(uuid())
+  
+  firstName      String?
+  lastName       String?
+
+  Projects       Project[]      //VAN A PODER SER ASIGNADOS UNA VEZ SE CREE PRIMERO EL COLABORADOR
+
+  companyName    String? ///Razon social
+  dni            String?
+  cuit           String?
+
+  quantityWorkers  Float      // Cantidad de personal que pueden aportar
+  valuePerHour     Float      //VALOR POR HORA DEL PERSONAL QUE SE APORTA
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@map("collaborators")
 }
 
