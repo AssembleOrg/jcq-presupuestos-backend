@@ -71,6 +71,18 @@ export class ProjectResponseDto {
   @Transform(({ obj }) => obj.items || []) 
   structures: ProjectItemResponseDto[];
 
+  @ApiPropertyOptional({description: 'Identificacion del colaborador'})
+  @Expose()
+  collabValuePerHour? : number;
+
+  @ApiPropertyOptional({description: 'Cantidad de empleados aportados por el colaborador'})
+  @Expose()
+  collabWorkersCount? : number;
+
+  @ApiPropertyOptional({description: 'Precio por hora de los empleados del colaborador'})
+  @Expose()
+  collabDisplayName: string;
+
   @ApiProperty({ description: 'Fecha de creación' })
   @Expose()
   createdAt: Date;

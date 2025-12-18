@@ -99,6 +99,7 @@ model Project {
 
   collabWorkersCount Int?        // Cuántos empleados aportó específicamente aca
   collabValuePerHour Float?      // Cuánto se acordó pagar por hora en este proyecto
+  collabDisplayName   String?
 
   clientId    String
   client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)

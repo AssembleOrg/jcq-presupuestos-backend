@@ -620,5 +620,39 @@ export class ProjectsService {
   });
 }
 
+async assignCollaborator(projectId: string, collaboratorId: string): Promise<ProjectResponseDto> {
+  return await this.prisma.$transaction(async (tx) => {
+    const project = await tx.project.findUnique({
+      where: { id: projectId, deletedAt: null },
+    });
+    if (!project) throw new NotFoundException('Proyecto no encontrado');
+
+    const collaborator = await tx.collaborator.findUnique({
+      where: { id: collaboratorId, deletedAt: null },
+    });
+    if (!collaborator) throw new NotFoundException('Colaborador no encontrado');
+
+    const displayName = collaborator.companyName 
+      ? collaborator.companyName 
+      : `${collaborator.firstName} ${collaborator.lastName}`.trim();
+
+    const updatedProject = await tx.project.update({
+      where: { id: projectId },
+      data: {
+        collaboratorId: collaborator.id,
+        collabWorkersCount: collaborator.quantityWorkers, 
+        collabValuePerHour: collaborator.valuePerHour,   
+        collabDisplayName: displayName,                  
+      },
+      include: {
+        client: true, 
+        collaborator: true, 
+      }
+    });
+
+    return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
+  });
+}
+
 
 }
