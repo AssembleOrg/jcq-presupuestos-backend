@@ -4,4 +4,5 @@ export * from './project-response.dto';
 export * from './change-status.dto';
 export * from './filter-project.dto';
 export * from './dashboard-response.dto';
+export * from './project-structure.dto';
 

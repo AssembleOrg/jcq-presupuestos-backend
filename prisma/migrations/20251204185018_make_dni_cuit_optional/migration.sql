@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Staff" ALTER COLUMN "cuit" DROP NOT NULL;
