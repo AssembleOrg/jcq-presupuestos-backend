@@ -18,6 +18,7 @@ import { HttpLoggerMiddleware, ErrorTrackerInterceptor } from './common/logger';
 import { StaffModule } from './modules/staff';
 import { StructuresModule } from './modules/structures';
 import { BudgetsModule } from './modules/budgets';
+import { CollaboratorsModule } from './modules/collaborators';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { BudgetsModule } from './modules/budgets';
     StaffModule,
     StructuresModule,
     BudgetsModule,
+    CollaboratorsModule,
   ],
   controllers: [AppController],
   providers: [
