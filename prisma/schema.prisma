@@ -173,6 +173,8 @@ model WorkRecord {
   hoursWednesday Float
   hoursThursday  Float
   hoursFriday    Float
+  hoursSaturday  Float  /// Luego borrar registros viejos para sacar este campo como Opcional y que pase a ser obligatorio
+  hoursSunday    Float
   
   staffId        String
   staff          Staff     @relation(fields: [staffId], references: [id])

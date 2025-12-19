@@ -34,6 +34,14 @@ export class WorkRecordResponseDto {
   @Expose()
   hoursFriday: number;
 
+  @ApiPropertyOptional({ description: 'Horas trabajadas el sabado' })
+  @Expose()
+  hoursSaturday: number;
+
+  @ApiPropertyOptional({ description: 'Horas trabajadas el domingo' })
+  @Expose()
+  hoursSunday: number;
+
   @ApiPropertyOptional({ description: 'Fecha de inicio del registro de trabajo' })
   @Expose()
   startDate: Date;
