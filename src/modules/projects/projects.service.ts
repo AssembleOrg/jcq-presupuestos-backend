@@ -63,11 +63,10 @@ export class ProjectsService {
   async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
     const { structures, ...projectData } = createProjectDto;
 
-    //Validar que el cliente existe
     const client = await this.prisma.client.findFirst({
-      where: { 
+      where: {
         id: createProjectDto.clientId,
-        deletedAt: null 
+        deletedAt: null
       },
     });
 
@@ -75,7 +74,27 @@ export class ProjectsService {
       throw new NotFoundException('Cliente no encontrado');
     }
 
-    // Validar fechas
+    //LOGICA DE COLABORADOR 
+    // Variables para guardar la snapshot de los datos
+    let collabSnapshot: any = {};
+
+    if (projectData.collaboratorId) {
+      const collab = await this.prisma.collaborator.findUnique({
+        where: { id: projectData.collaboratorId, deletedAt: null },
+      });
+
+      if (!collab) {
+        throw new NotFoundException('El colaborador seleccionado no existe');
+      }
+
+      collabSnapshot = {
+        collabDisplayName: collab.companyName || `${collab.firstName} ${collab.lastName}`.trim(),
+        collabValuePerHour: collab.valuePerHour,
+        // Si el DTO no trae cantidad específica, usamos la del perfil del colaborador
+        collabWorkersCount: projectData.collabWorkersCount ?? collab.quantityWorkers,
+      };
+    }
+
     const dateInit = new Date(createProjectDto.dateInit);
     const dateEnd = new Date(createProjectDto.dateEnd);
 
@@ -86,9 +105,11 @@ export class ProjectsService {
     const rest = createProjectDto.amount;
 
     return this.prisma.$transaction(async (tx) => {
+      // Crear el proyecto fusionando los datos + el snapshot del colaborador
       const project = await tx.project.create({
         data: {
           ...projectData,
+          ...collabSnapshot, 
           dateInit,
           dateEnd,
           totalPaid: 0,
@@ -96,13 +117,15 @@ export class ProjectsService {
         },
         include: {
           client: true,
+          collaborator: true, // Se incluye  la relación para devolverla en el response
         },
       });
 
+      //Manejo de estructuras y stock intacto
       if (structures && structures.length > 0) {
         for (const item of structures) {
-          const structure = await tx.structure.findUnique({ 
-            where: { id: item.structureId } 
+          const structure = await tx.structure.findUnique({
+            where: { id: item.structureId }
           });
 
           if (!structure) {
@@ -115,11 +138,13 @@ export class ProjectsService {
             );
           }
 
+          // Decrementar stock
           await tx.structure.update({
             where: { id: item.structureId },
             data: { stock: { decrement: item.quantity } }
           });
 
+          // Crear relación
           await tx.projectItem.create({
             data: {
               projectId: project.id,
@@ -132,7 +157,7 @@ export class ProjectsService {
 
       return plainToInstance(ProjectResponseDto, project, { excludeExtraneousValues: true });
     });
-  }
+}
 
   async findAll(filters: FilterProjectDto = {}): Promise<ProjectResponseDto[]> {
     const where = this.buildWhereClause(filters);
@@ -212,7 +237,6 @@ export class ProjectsService {
   async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectResponseDto> {
     const { structures, ...projectData } = updateProjectDto;
 
-    // Verificar existencia y obtener estado actual para calcular diferencias
     const project = await this.prisma.project.findFirst({
       where: { id, deletedAt: null },
       include: { 
@@ -241,6 +265,30 @@ export class ProjectsService {
     if (projectData.amount !== undefined) {
       dataToUpdate.rest = projectData.amount - project.totalPaid;
     }
+
+    // LOGICA DE COLABORADOR
+    // Caso 1: Se selecciona un nuevo colaborador (o se cambia el existente ya asignado)
+    if (projectData.collaboratorId) {
+      const collab = await this.prisma.collaborator.findUnique({
+        where: { id: projectData.collaboratorId, deletedAt: null },
+      });
+
+      if (!collab) {
+        throw new NotFoundException('El colaborador seleccionado no existe');
+      }
+
+      // Actualizamos el snapshot que guaradaba los datos viejos con los datos actuales del colaborador
+      dataToUpdate.collabDisplayName = collab.companyName || `${collab.firstName} ${collab.lastName}`.trim();
+      dataToUpdate.collabValuePerHour = collab.valuePerHour;
+      
+      // Si el DTO trae una cantidad específica, la usamos. Si no, reseteamos al default del colaborador.
+      dataToUpdate.collabWorkersCount = projectData.collabWorkersCount ?? collab.quantityWorkers;
+    } 
+    // Caso 2: No cambia el colaborador, pero sí se actualiza la cantidad de personal externo
+    else if (projectData.collabWorkersCount !== undefined) {
+      dataToUpdate.collabWorkersCount = projectData.collabWorkersCount;
+    }
+    // ------------------------------------------------
 
     return this.prisma.$transaction(async (tx) => {
       
@@ -304,6 +352,7 @@ export class ProjectsService {
         data: dataToUpdate,
         include: { 
           client: true,
+          collaborator: true, 
           items: {
             include: {
               structure: true
@@ -314,7 +363,7 @@ export class ProjectsService {
 
       return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
     });
-  }
+}
 
   async remove(id: string): Promise<{ message: string }> {
     const project = await this.prisma.project.findFirst({
@@ -617,6 +666,40 @@ export class ProjectsService {
     });
 
     return { message: 'Ítem eliminado y stock restaurado correctamente' };
+  });
+}
+
+async assignCollaborator(projectId: string, collaboratorId: string): Promise<ProjectResponseDto> {
+  return await this.prisma.$transaction(async (tx) => {
+    const project = await tx.project.findUnique({
+      where: { id: projectId, deletedAt: null },
+    });
+    if (!project) throw new NotFoundException('Proyecto no encontrado');
+
+    const collaborator = await tx.collaborator.findUnique({
+      where: { id: collaboratorId, deletedAt: null },
+    });
+    if (!collaborator) throw new NotFoundException('Colaborador no encontrado');
+
+    const displayName = collaborator.companyName 
+      ? collaborator.companyName 
+      : `${collaborator.firstName} ${collaborator.lastName}`.trim();
+
+    const updatedProject = await tx.project.update({
+      where: { id: projectId },
+      data: {
+        collaboratorId: collaborator.id,
+        collabWorkersCount: collaborator.quantityWorkers, 
+        collabValuePerHour: collaborator.valuePerHour,   
+        collabDisplayName: displayName,                  
+      },
+      include: {
+        client: true, 
+        collaborator: true, 
+      }
+    });
+
+    return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
   });
 }
 

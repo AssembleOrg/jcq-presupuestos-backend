@@ -88,5 +88,22 @@ export class CreateProjectDto {
   @ValidateNested({ each: true })
   @Type(() => ProjectStructureDto)
   structures?: ProjectStructureDto[];
+
+  @ApiPropertyOptional({ 
+    description: 'ID del colaborador externo',
+    example: 'uuid-del-colaborador'
+  })
+  @IsUUID('4', { message: 'ID de colaborador inválido' })
+  @IsOptional()
+  collaboratorId?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Cantidad de personal externo pactado',
+    example: 5
+  })
+  @IsInt({ message: 'La cantidad de personal externo debe ser un número entero' })
+  @IsOptional()
+  @Type(() => Number)
+  collabWorkersCount?: number;
 }
 
