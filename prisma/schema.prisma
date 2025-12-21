@@ -299,3 +299,29 @@ model Collaborator{                               //VALIDACIONES MUY IMPORTANTES
   @@map("collaborators")
 }
 
+model ExpenseCategory{
+  id             String    @id @default(uuid())
+  name           String
+  description    String?
+
+  expenses      Expense[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+}
+
+model Expense{
+  id                  String    @id @default(uuid())
+  description         String
+  amount              Decimal  @db.Decimal(10, 2)
+  date                DateTime @default(now())      //Fecha en que se realizo el gasto, mas no se creo.
+  
+  categoryId          String
+  category            ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+}
+

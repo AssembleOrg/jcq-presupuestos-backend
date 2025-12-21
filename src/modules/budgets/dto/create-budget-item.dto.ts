@@ -11,7 +11,7 @@ export class CreateBudgetItemDto {
 
   //o es una estructura de la base de datos o es manual el ingreso
   @ApiPropertyOptional({
-    description: 'ID de la estructura predefinida a usar enpresupuesto',
+    description: 'ID de la estructura predefinida a usar en presupuesto',
   })
   @ValidateIf(o => !o.manualName)
   @IsUUID()
