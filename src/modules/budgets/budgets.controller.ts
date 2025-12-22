@@ -57,7 +57,7 @@ export class BudgetsController{
         })
     async findAll(@Query() filters: FilterBudgetDto): Promise<BudgetResponseDto[]> {
         return this.budgetsService.findAllBudgets(filters);
-        }
+    }
 
     @Get(':id')
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
