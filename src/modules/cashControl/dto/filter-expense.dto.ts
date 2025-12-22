@@ -21,5 +21,5 @@ export class FilterExpenseDTO{
     })
     @IsString()
     @IsOptional()
-    expenseCategoryName: string;
+    expenseCategoryName?: string;
 }

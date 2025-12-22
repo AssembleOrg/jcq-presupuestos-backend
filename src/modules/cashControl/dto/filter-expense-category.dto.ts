@@ -7,6 +7,6 @@ export class FilterExpenseCategoryDTO{
     })
     @IsOptional()
     @IsString()
-    expenseCategoryName: string
+    expenseCategoryName?: string
 
 }

@@ -32,6 +32,6 @@ export class CreateExpenseDTO{
     })
     @IsUUID()
     @IsNotEmpty({message:'El gasto debe tener una categoria asignada'})
-    categoryId?: string;
+    categoryId: string;
 
 }
