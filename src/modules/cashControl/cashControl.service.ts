@@ -89,26 +89,23 @@ export class CashControlService{
 
   // Crear gasto
   async createExpense(createExpenseDto: CreateExpenseDTO): Promise<ExpenseResponseDTO> {
-    const { date, categoryId, ...rest } = createExpenseDto;
-
-    if (!categoryId) {
+    if (!createExpenseDto.categoryId) {
         throw new BadRequestException('El gasto debe tener una categoría asignada');
     }
-    
     const expense = await this.prisma.expense.create({
       data: {
-        ...rest,
-    
-        date: new Date(date),
-
-        categoryId: categoryId 
+        description: createExpenseDto.description,
+        amount: createExpenseDto.amount,
+        date: new Date(createExpenseDto.date),
+        categoryId: createExpenseDto.categoryId 
       },
       include: {
         category: true
       }
     });
+
     return plainToInstance(ExpenseResponseDTO, expense, { excludeExtraneousValues: true });
-    }
+  }
 
     //Obtener gastos
   async getAllExpenses(filters: FilterExpenseDTO = {}): Promise<ExpenseResponseDTO[]>{

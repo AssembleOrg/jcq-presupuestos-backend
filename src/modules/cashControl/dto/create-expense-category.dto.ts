@@ -20,10 +20,11 @@ export class CreateExpenseCategoryDTO{
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
       description: 'Lista de gastos que incluyen esta categoria',
       type: [CreateExpenseDTO],
     })
+  @IsOptional()  
   @IsArray()
   @ValidateNested({ each: true }) 
   @Type(() => CreateExpenseDTO) 

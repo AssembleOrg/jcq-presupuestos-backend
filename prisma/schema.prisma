@@ -314,7 +314,7 @@ model ExpenseCategory{
 model Expense{
   id                  String    @id @default(uuid())
   description         String
-  amount              Decimal  @db.Decimal(10, 2)
+  amount              Float
   date                DateTime @default(now())      //Fecha en que se realizo el gasto, mas no se creo.
   
   categoryId          String
