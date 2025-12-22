@@ -87,6 +87,28 @@ export class CreateWorkRecordDto {
   hoursFriday: number;
 
   @ApiProperty({
+    description: 'Horas trabajadas el Sabado',
+    example: 8,
+    default: 0,
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursSaturday: number;
+
+  @ApiProperty({
+    description: 'Horas trabajadas el Domingo',
+    example: 8,
+    default: 0,
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursSunday: number;
+
+  @ApiProperty({
     description: 'Fecha de inicio del registro de trabajo (Lunes de la semana)',
     example: '2023-10-02',
   })

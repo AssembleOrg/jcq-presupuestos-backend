@@ -87,7 +87,9 @@ export class StaffService {
       data.hoursTuesday +
       data.hoursWednesday +
       data.hoursThursday +
-      data.hoursFriday;
+      data.hoursFriday+
+      data.hoursSaturday+
+      data.hoursSunday;
 
     const totalCalculation = (totalHours * data.valuePerHour) - data.advance;
 
@@ -119,11 +121,13 @@ export class StaffService {
     const hoursWednesday = changes.hoursWednesday ?? record.hoursWednesday;
     const hoursThursday = changes.hoursThursday ?? record.hoursThursday;
     const hoursFriday = changes.hoursFriday ?? record.hoursFriday;
+    const hoursSaturday = changes.hoursSaturday ?? record.hoursSaturday;
+    const hoursSunday = changes.hoursSunday ?? record.hoursSunday;
     
     const valuePerHour = changes.valuePerHour ?? record.valuePerHour;
     const advance = changes.advance ?? record.advance;
 
-    const totalHours = hoursMonday + hoursTuesday + hoursWednesday + hoursThursday + hoursFriday;
+    const totalHours = hoursMonday + hoursTuesday + hoursWednesday + hoursThursday + hoursFriday + hoursSaturday + hoursSunday;
     const newTotal = (totalHours * valuePerHour) - advance;
 
     return this.prisma.workRecord.update({
