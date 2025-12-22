@@ -19,6 +19,7 @@ import { StaffModule } from './modules/staff';
 import { StructuresModule } from './modules/structures';
 import { BudgetsModule } from './modules/budgets';
 import { CollaboratorsModule } from './modules/collaborators';
+import { CashControlModule } from './modules/cashControl';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CollaboratorsModule } from './modules/collaborators';
     StructuresModule,
     BudgetsModule,
     CollaboratorsModule,
+    CashControlModule,
   ],
   controllers: [AppController],
   providers: [
