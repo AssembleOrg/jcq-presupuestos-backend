@@ -164,10 +164,10 @@ model Staff{
 model WorkRecord {
   id             String    @id @default(uuid())
   
-  valuePerHour   Float     // "Valor por Hora"
   advance        Float     // "Adelanto"
-  total          Float     // Total = (Horas Totales X Valor por Hora) - Adelanto
+  total          Float     // Total = Suma de lo pagado por las horas - Adelanto
   
+  //HOURSDAY basicamente es el monto que se le paga el empleado ese dia, mas no las horas trabajadas (En un principio era Hours * ValuePerHour)
   hoursMonday    Float
   hoursTuesday   Float
   hoursWednesday Float
@@ -175,6 +175,18 @@ model WorkRecord {
   hoursFriday    Float
   hoursSaturday  Float  /// Luego borrar registros viejos para sacar este campo como Opcional y que pase a ser obligatorio
   hoursSunday    Float
+
+  //Horas extras que se pagan 
+  hoursMondayExtra    Float
+  hoursTuesdayExtra   Float
+  hoursWednesdayExtra Float
+  hoursThursdayExtra  Float
+  hoursFridayExtra    Float
+  hoursSaturdayExtra  Float  /// Luego borrar registros viejos para sacar este campo como Opcional y que pase a ser obligatorio
+  hoursSundayExtra    Float
+
+  //Horas extras que hacen el sabado o viernes, se lo pagan en la proxima liquidacion, por ende se agrega un campo mas
+  hoursLastWeek       Float
   
   staffId        String
   staff          Staff     @relation(fields: [staffId], references: [id])
