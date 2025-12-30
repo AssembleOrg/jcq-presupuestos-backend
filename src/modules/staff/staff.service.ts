@@ -82,16 +82,24 @@ export class StaffService {
 
   // 1. planilla de horas (Boton "Cargar Horas")
  async createWorkRecord(data: CreateWorkRecordDto) {
-    const totalHours =
+    const total =
       data.hoursMonday +
       data.hoursTuesday +
       data.hoursWednesday +
       data.hoursThursday +
       data.hoursFriday+
       data.hoursSaturday+
-      data.hoursSunday;
+      data.hoursSunday+
+      data.hoursMondayExtra+
+      data.hoursTuesdayExtra+
+      data.hoursWednesdayExtra+
+      data.hoursThursdayExtra+
+      data.hoursFridayExtra+
+      data.hoursSaturdayExtra+
+      data.hoursSundayExtra+
+      data.hoursLastWeek;
 
-    const totalCalculation = (totalHours * data.valuePerHour) - data.advance;
+    const totalCalculation = total - data.advance;
 
     const start = new Date(data.startDate);
     const end = new Date(start); 
@@ -123,12 +131,36 @@ export class StaffService {
     const hoursFriday = changes.hoursFriday ?? record.hoursFriday;
     const hoursSaturday = changes.hoursSaturday ?? record.hoursSaturday;
     const hoursSunday = changes.hoursSunday ?? record.hoursSunday;
+
+    const hoursMondayExtra = changes.hoursMondayExtra ?? record.hoursMondayExtra
+    const hoursTuesdayExtra = changes.hoursTuesdayExtra ?? record.hoursTuesdayExtra
+    const hoursWednesdayExtra = changes.hoursWednesdayExtra ?? record.hoursWednesdayExtra
+    const hoursThursdayExtra = changes.hoursThursdayExtra ?? record.hoursThursdayExtra
+    const hoursFridayExtra = changes.hoursFridayExtra ?? record.hoursFridayExtra
+    const hoursSaturdayExtra = changes.hoursSaturdayExtra ?? record.hoursSaturdayExtra
+    const hoursSundayExtra = changes.hoursSundayExtra ?? record.hoursSundayExtra
+
+    const hoursLastWeek = changes.hoursLastWeek ?? record.hoursLastWeek
     
-    const valuePerHour = changes.valuePerHour ?? record.valuePerHour;
     const advance = changes.advance ?? record.advance;
 
-    const totalHours = hoursMonday + hoursTuesday + hoursWednesday + hoursThursday + hoursFriday + hoursSaturday + hoursSunday;
-    const newTotal = (totalHours * valuePerHour) - advance;
+    const totalHours = hoursMonday+ 
+    hoursTuesday+ 
+    hoursWednesday+
+    hoursThursday+
+    hoursFriday+
+    hoursSaturday+
+    hoursSunday+
+    hoursMondayExtra+
+    hoursTuesdayExtra+
+    hoursWednesdayExtra+
+    hoursThursdayExtra+
+    hoursFridayExtra+
+    hoursSaturdayExtra+
+    hoursSundayExtra+
+    hoursLastWeek;
+
+    const newTotal = totalHours - advance;
 
     return this.prisma.workRecord.update({
       where: { id },

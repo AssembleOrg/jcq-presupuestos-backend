@@ -11,16 +11,6 @@ export class CreateWorkRecordDto {
   staffId: string;
 
   @ApiProperty({
-    description: 'Valor por Hora',
-    example: 15000.0,
-    minimum: 0
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  @Min(0) 
-  valuePerHour: number;
-
-  @ApiProperty({
     description: 'Adelanto (Enviar 0 si no hay)',
     example: 20000.0,
     default: 0,
@@ -32,7 +22,7 @@ export class CreateWorkRecordDto {
   advance: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Lunes',
+    description: 'Pago correspondiente por horas realizadas el Lunes',
     example: 8,
     default: 0, 
     minimum: 0
@@ -43,7 +33,7 @@ export class CreateWorkRecordDto {
   hoursMonday: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Martes',
+    description: 'Pago correspondiente por horas realizadas el Martes',
     example: 8,
     default: 0,
     minimum: 0
@@ -54,7 +44,7 @@ export class CreateWorkRecordDto {
   hoursTuesday: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Miercoles',
+    description: 'Pago correspondiente por horas realizadas el Miercoles',
     example: 8,
     default: 0,
     minimum: 0
@@ -65,7 +55,7 @@ export class CreateWorkRecordDto {
   hoursWednesday: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Jueves',
+    description: 'Pago correspondiente por horas realizadas el Jueves',
     example: 8,
     default: 0,
     minimum: 0
@@ -76,7 +66,7 @@ export class CreateWorkRecordDto {
   hoursThursday: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Viernes',
+    description: 'Pago correspondiente por horas realizadas el Viernes',
     example: 8,
     default: 0,
     minimum: 0
@@ -87,7 +77,7 @@ export class CreateWorkRecordDto {
   hoursFriday: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Sabado',
+    description: 'Pago correspondiente por horas realizadas el Sabado',
     example: 8,
     default: 0,
     minimum: 0
@@ -98,7 +88,7 @@ export class CreateWorkRecordDto {
   hoursSaturday: number;
 
   @ApiProperty({
-    description: 'Horas trabajadas el Domingo',
+    description: 'Pago correspondiente por horas realizadas el Domingo',
     example: 8,
     default: 0,
     minimum: 0
@@ -107,6 +97,95 @@ export class CreateWorkRecordDto {
   @IsNotEmpty()
   @Min(0)
   hoursSunday: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Lunes',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursMondayExtra: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Martes',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursTuesdayExtra: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Miercoles',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursWednesdayExtra: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Jueves',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursThursdayExtra: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Viernes',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursFridayExtra: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Sabado',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursSaturdayExtra: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Domingo',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursSundayExtra: number;
+
+  // Pago correspondiente a horas extras de la semana anterior que se pagan en esta liqudiacion
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas de semana anterior',
+    example: 8,
+    default: 0, 
+    minimum: 0
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  hoursLastWeek: number;
 
   @ApiProperty({
     description: 'Fecha de inicio del registro de trabajo (Lunes de la semana)',
