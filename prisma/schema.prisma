@@ -298,6 +298,7 @@ model Collaborator{                               //VALIDACIONES MUY IMPORTANTES
   
   firstName      String?
   lastName       String?
+  notes          String?
 
   Projects       Project[]      //VAN A PODER SER ASIGNADOS UNA VEZ SE CREE PRIMERO EL COLABORADOR
 
