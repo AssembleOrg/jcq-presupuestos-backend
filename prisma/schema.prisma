@@ -153,6 +153,10 @@ model Staff{
   dni       String?   // DNI - uno de los dos debe ser obligatorio (validar en DTO) 
   cuit      String?   // CUIT sin formato, solo números o string
   category  String    // Categoría del personal 
+  numberPhone String?
+  adress      String?
+  email       String?
+  seniority   String?
 
   workRecords  WorkRecord[]
   

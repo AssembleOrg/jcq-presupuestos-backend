@@ -6,7 +6,6 @@ import { DateTime } from 'luxon';
 import { PaginationQueryDto } from '~/modules/users/dto';
 import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces';
 
-
 @Injectable()
 export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
