@@ -20,6 +20,7 @@ import { StructuresModule } from './modules/structures';
 import { BudgetsModule } from './modules/budgets';
 import { CollaboratorsModule } from './modules/collaborators';
 import { CashControlModule } from './modules/cashControl';
+import { DolarService } from './common/services/dolar.service';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { CashControlModule } from './modules/cashControl';
   ],
   controllers: [AppController],
   providers: [
+    DolarService,
     AppService,
     // Rate Limiting Guard
     {
