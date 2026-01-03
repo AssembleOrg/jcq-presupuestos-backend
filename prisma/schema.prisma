@@ -194,6 +194,8 @@ model WorkRecord {
   
   staffId        String
   staff          Staff     @relation(fields: [staffId], references: [id])
+
+  expense     Expense?
   
   startDate      DateTime // Por ejemplo, el lunes de la semana
   endDate        DateTime // Por ejemplo, el viernes o domingo de la semana. Sirve por si quiere la liquidacion de un mes completo en algun momento
@@ -336,6 +338,9 @@ model Expense{
   
   categoryId          String
   category            ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  workRecordId      String?  @unique // Opcional: Relacion 1 a 1 con la planilla
+  workRecord        WorkRecord? @relation(fields: [workRecordId], references: [id])
 
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
