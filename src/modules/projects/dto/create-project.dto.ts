@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsString, IsUUID, IsOptional, IsInt, Min, IsDateString, IsArray, ValidateNested} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProjectStructureDto } from './project-structure.dto';
+import { AssignCollaboratorDto } from './assign-collaborator.dto';
 
 export class CreateProjectDto {
   @ApiProperty({ 
@@ -90,20 +91,14 @@ export class CreateProjectDto {
   structures?: ProjectStructureDto[];
 
   @ApiPropertyOptional({ 
-    description: 'ID del colaborador externo',
-    example: 'uuid-del-colaborador'
+    type: [AssignCollaboratorDto],
+    description: 'Lista de colaboradores asignados al proyecto'
   })
-  @IsUUID('4', { message: 'ID de colaborador inválido' })
   @IsOptional()
-  collaboratorId?: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AssignCollaboratorDto)
+  collaborators?: AssignCollaboratorDto[];
 
-  @ApiPropertyOptional({ 
-    description: 'Cantidad de personal externo pactado',
-    example: 5
-  })
-  @IsInt({ message: 'La cantidad de personal externo debe ser un número entero' })
-  @IsOptional()
-  @Type(() => Number)
-  collabWorkersCount?: number;
 }
 

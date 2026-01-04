@@ -8,6 +8,7 @@ import { DateTime } from 'luxon';
 import { ProjectStatus } from '@prisma/client';
 import { DolarService } from '~/common/services/dolar.service';
 import { CreateProjectItemDto, ProjectItemResponseDto } from '~/modules/structures/dto';
+import { AssignCollaboratorDto } from './dto/assign-collaborator.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -60,8 +61,9 @@ export class ProjectsService {
     return where;
   }
 
-  async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
-    const { structures, ...projectData } = createProjectDto;
+async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
+    // Extraemos structures y collaborators del DTO para manejarlos por separado
+    const { structures, collaborators, ...projectData } = createProjectDto;
 
     const client = await this.prisma.client.findFirst({
       where: {
@@ -74,27 +76,6 @@ export class ProjectsService {
       throw new NotFoundException('Cliente no encontrado');
     }
 
-    //LOGICA DE COLABORADOR 
-    // Variables para guardar la snapshot de los datos
-    let collabSnapshot: any = {};
-
-    if (projectData.collaboratorId) {
-      const collab = await this.prisma.collaborator.findUnique({
-        where: { id: projectData.collaboratorId, deletedAt: null },
-      });
-
-      if (!collab) {
-        throw new NotFoundException('El colaborador seleccionado no existe');
-      }
-
-      collabSnapshot = {
-        collabDisplayName: collab.companyName || `${collab.firstName} ${collab.lastName}`.trim(),
-        collabValuePerHour: collab.valuePerHour,
-        // Si el DTO no trae cantidad específica, usamos la del perfil del colaborador
-        collabWorkersCount: projectData.collabWorkersCount ?? collab.quantityWorkers,
-      };
-    }
-
     const dateInit = new Date(createProjectDto.dateInit);
     const dateEnd = new Date(createProjectDto.dateEnd);
 
@@ -105,11 +86,10 @@ export class ProjectsService {
     const rest = createProjectDto.amount;
 
     return this.prisma.$transaction(async (tx) => {
-      // Crear el proyecto fusionando los datos + el snapshot del colaborador
+      // Se crea el proyecto base sin relaciones
       const project = await tx.project.create({
         data: {
           ...projectData,
-          ...collabSnapshot, 
           dateInit,
           dateEnd,
           totalPaid: 0,
@@ -117,11 +97,36 @@ export class ProjectsService {
         },
         include: {
           client: true,
-          collaborator: true, // Se incluye  la relación para devolverla en el response
         },
       });
 
-      //Manejo de estructuras y stock intacto
+      // LOGICA DE COLABORADORES (Relacion Muchos a Muchos)
+      if (collaborators && collaborators.length > 0) {
+        for (const collabItem of collaborators) {
+          // Buscamos al colaborador para obtener el "Snapshot" de sus datos actuales
+          const collabEntity = await tx.collaborator.findUnique({
+            where: { id: collabItem.collaboratorId, deletedAt: null },
+          });
+
+          if (!collabEntity) {
+            throw new NotFoundException(`El colaborador seleccionado (ID: ${collabItem.collaboratorId}) no existe`);
+          }
+
+          // Creamos la relación en la tabla intermedia guardando el precio del momento
+          await tx.projectCollaborator.create({
+            data: {
+              projectId: project.id,
+              collaboratorId: collabEntity.id,
+              workersCount: collabItem.workersCount,    // Cantidad de empleados asignados
+              hoursCount: collabItem.hoursCount,        // Cantidad de horas necesarias
+              valuePerHour: collabEntity.valuePerHour,  // SNAPSHOT: Precio pactado al momento de asignar
+              totalCost: collabItem.workersCount * collabItem.hoursCount * collabEntity.valuePerHour // Costo calculado
+            }
+          });
+        }
+      }
+
+      // LOGICA DE ESTRUCTURAS 
       if (structures && structures.length > 0) {
         for (const item of structures) {
           const structure = await tx.structure.findUnique({
@@ -155,9 +160,19 @@ export class ProjectsService {
         }
       }
 
-      return plainToInstance(ProjectResponseDto, project, { excludeExtraneousValues: true });
+      // Devolvemos el proyecto re-consultando para incluir todas las nuevas relaciones
+      const finalProject = await tx.project.findUnique({
+        where: { id: project.id },
+        include: {
+          client: true,
+          items: { include: { structure: true } },
+          collaborators: { include: { collaborator: true } } // Incluimos los colaboradores asignados
+        }
+      });
+
+      return plainToInstance(ProjectResponseDto, finalProject, { excludeExtraneousValues: true });
     });
-}
+  }
 
   async findAll(filters: FilterProjectDto = {}): Promise<ProjectResponseDto[]> {
     const where = this.buildWhereClause(filters);
@@ -170,8 +185,14 @@ export class ProjectsService {
           include: {
             structure: true // Necesitamos el nombre de la estructura
           }
+        },
+        collaborators: {
+          include: {
+            collaborator: true // Trae la info del perfil (nombre, email, etc.)
+          }
         }
       },
+      
       orderBy: { createdAt: 'desc' },
     });
 
@@ -194,6 +215,11 @@ export class ProjectsService {
           items: {
             include: {
               structure: true
+            }
+          },
+          collaborators: {
+            include: {
+              collaborator: true 
             }
           }
         },
@@ -223,6 +249,11 @@ export class ProjectsService {
           include: {
             structure: true // Para tener el nombre y la medida del item
           }
+        },
+        collaborators: {
+          include: {
+            collaborator: true 
+          }
         }
       },
     });
@@ -234,13 +265,14 @@ export class ProjectsService {
     return plainToInstance(ProjectResponseDto, project, { excludeExtraneousValues: true });
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectResponseDto> {
-    const { structures, ...projectData } = updateProjectDto;
+async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectResponseDto> {
+    const { structures, collaborators, ...projectData } = updateProjectDto;
 
     const project = await this.prisma.project.findFirst({
       where: { id, deletedAt: null },
       include: { 
-        items: true 
+        items: true,
+        collaborators: true // Necesitamos ver qué colaboradores ya tiene asignados
       } 
     });
 
@@ -266,32 +298,77 @@ export class ProjectsService {
       dataToUpdate.rest = projectData.amount - project.totalPaid;
     }
 
-    // LOGICA DE COLABORADOR
-    // Caso 1: Se selecciona un nuevo colaborador (o se cambia el existente ya asignado)
-    if (projectData.collaboratorId) {
-      const collab = await this.prisma.collaborator.findUnique({
-        where: { id: projectData.collaboratorId, deletedAt: null },
-      });
-
-      if (!collab) {
-        throw new NotFoundException('El colaborador seleccionado no existe');
-      }
-
-      // Actualizamos el snapshot que guaradaba los datos viejos con los datos actuales del colaborador
-      dataToUpdate.collabDisplayName = collab.companyName || `${collab.firstName} ${collab.lastName}`.trim();
-      dataToUpdate.collabValuePerHour = collab.valuePerHour;
-      
-      // Si el DTO trae una cantidad específica, la usamos. Si no, reseteamos al default del colaborador.
-      dataToUpdate.collabWorkersCount = projectData.collabWorkersCount ?? collab.quantityWorkers;
-    } 
-    // Caso 2: No cambia el colaborador, pero sí se actualiza la cantidad de personal externo
-    else if (projectData.collabWorkersCount !== undefined) {
-      dataToUpdate.collabWorkersCount = projectData.collabWorkersCount;
-    }
-    // ------------------------------------------------
-
     return this.prisma.$transaction(async (tx) => {
       
+      // 1. Actualización básica del proyecto
+      await tx.project.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+
+      // LOGICA DE COLABORADORES 
+      if (collaborators) {
+        // Obtenemos las asignaciones actuales de la DB
+        const currentAssignments = await tx.projectCollaborator.findMany({
+          where: { projectId: id },
+          include: { collaborator: true }
+        });
+        
+        const currentMap = new Map(currentAssignments.map(c => [c.collaboratorId, c]));
+        const incomingIds = new Set(collaborators.map(c => c.collaboratorId));
+
+        for (const item of collaborators) {
+          const existing = currentMap.get(item.collaboratorId);
+
+          if (existing) {
+            // CASO A: ACTUALIZAR EXISTENTE
+            // Si el colaborador ya estaba asignado, solo actualizamos las cantidades (horas/personal).
+            // IMPORTANTE: Mantener el 'valuePerHour' original 
+            const newTotalCost = item.workersCount * item.hoursCount * existing.valuePerHour;
+
+            await tx.projectCollaborator.update({
+              where: { id: existing.id }, // Usamos el ID de la tabla intermedia
+              data: {
+                workersCount: item.workersCount,
+                hoursCount: item.hoursCount,
+                totalCost: newTotalCost // Recalculamos el costo total con el precio histórico
+              }
+            });
+          } else {
+            // CASO B: NUEVA ASIGNACIÓN
+            // El colaborador no estaba en este proyecto, lo agregamos.
+            const collabInfo = await tx.collaborator.findUnique({
+              where: { id: item.collaboratorId }
+            });
+
+            if (!collabInfo) throw new NotFoundException(`Colaborador ${item.collaboratorId} no existe`);
+
+            // tomar el precio ACTUAL como nuevo Snapshot
+            await tx.projectCollaborator.create({
+              data: {
+                projectId: id,
+                collaboratorId: item.collaboratorId,
+                workersCount: item.workersCount,
+                hoursCount: item.hoursCount,
+                valuePerHour: collabInfo.valuePerHour, 
+                totalCost: item.workersCount * item.hoursCount * collabInfo.valuePerHour
+              }
+            });
+          }
+        }
+
+        // CASO C: ELIMINACIÓN
+        // Si había colaboradores asignados que NO vienen en el nuevo array, se eliminan del proyecto.
+        for (const [collabId, record] of currentMap) {
+          if (!incomingIds.has(collabId)) {
+            await tx.projectCollaborator.delete({
+              where: { id: record.id }
+            });
+          }
+        }
+      }
+
+      // LOGICA DE ESTRUCTURAS (Manejo de Stock)
       if (structures) {
         const currentItemsMap = new Map(project.items.map(i => [i.structureId, i.quantity]));
         const incomingStructureIds = new Set(structures.map(s => s.structureId));
@@ -330,7 +407,7 @@ export class ProjectsService {
           }
         }
 
-        // Procesar eliminaciones 
+        // Procesar eliminaciones de estructuras
         for (const [structureId, quantity] of currentItemsMap) {
           if (!incomingStructureIds.has(structureId)) {
             // Devolver stock
@@ -347,23 +424,23 @@ export class ProjectsService {
         }
       }
 
-      const updatedProject = await tx.project.update({
+      // Devolver proyecto actualizado con todas las relaciones
+      const updatedProject = await tx.project.findUnique({
         where: { id },
-        data: dataToUpdate,
         include: { 
           client: true,
-          collaborator: true, 
           items: {
-            include: {
-              structure: true
-            }
+            include: { structure: true }
+          },
+          collaborators: {
+            include: { collaborator: true }
           }
          }, 
       });
 
       return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
     });
-}
+  }
 
   async remove(id: string): Promise<{ message: string }> {
     const project = await this.prisma.project.findFirst({
@@ -668,40 +745,5 @@ export class ProjectsService {
     return { message: 'Ítem eliminado y stock restaurado correctamente' };
   });
 }
-
-async assignCollaborator(projectId: string, collaboratorId: string): Promise<ProjectResponseDto> {
-  return await this.prisma.$transaction(async (tx) => {
-    const project = await tx.project.findUnique({
-      where: { id: projectId, deletedAt: null },
-    });
-    if (!project) throw new NotFoundException('Proyecto no encontrado');
-
-    const collaborator = await tx.collaborator.findUnique({
-      where: { id: collaboratorId, deletedAt: null },
-    });
-    if (!collaborator) throw new NotFoundException('Colaborador no encontrado');
-
-    const displayName = collaborator.companyName 
-      ? collaborator.companyName 
-      : `${collaborator.firstName} ${collaborator.lastName}`.trim();
-
-    const updatedProject = await tx.project.update({
-      where: { id: projectId },
-      data: {
-        collaboratorId: collaborator.id,
-        collabWorkersCount: collaborator.quantityWorkers, 
-        collabValuePerHour: collaborator.valuePerHour,   
-        collabDisplayName: displayName,                  
-      },
-      include: {
-        client: true, 
-        collaborator: true, 
-      }
-    });
-
-    return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
-  });
-}
-
 
 }
