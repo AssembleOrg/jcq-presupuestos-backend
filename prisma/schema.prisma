@@ -94,12 +94,7 @@ model Project {
   event       String?        // Evento relacionado al proyecto
   items       ProjectItem[]
   
-  collaboratorId  String?
-  collaborator    Collaborator?  @relation(fields: [collaboratorId], references: [id], onDelete: Restrict)
-
-  collabWorkersCount Int?        // Cuántos empleados aportó específicamente aca
-  collabValuePerHour Float?      // Cuánto se acordó pagar por hora en este proyecto
-  collabDisplayName   String?
+  collaborators ProjectCollaborator[]
 
   clientId    String
   client      Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -302,7 +297,7 @@ model Collaborator{                               //VALIDACIONES MUY IMPORTANTES
   lastName       String?
   notes          String?
 
-  Projects       Project[]      //VAN A PODER SER ASIGNADOS UNA VEZ SE CREE PRIMERO EL COLABORADOR
+  projects       ProjectCollaborator[]
 
   companyName    String? ///Razon social
   dni            String?
@@ -316,6 +311,28 @@ model Collaborator{                               //VALIDACIONES MUY IMPORTANTES
   deletedAt      DateTime?
 
   @@map("collaborators")
+}
+
+model ProjectCollaborator {
+  id             String        @id @default(uuid())
+  
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  collaboratorId String
+  collaborator   Collaborator  @relation(fields: [collaboratorId], references: [id])
+
+  workersCount   Int           // Cantidad de empleados asignados para este proyecto
+  hoursCount     Float         // Cantidad de horas estimadas/necesarias
+  valuePerHour   Float         // Snapshot: Precio por hora pactado en el momento de la asignación
+  
+  totalCost      Float         
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([projectId, collaboratorId]) // Para evitar duplicar el mismo colaborador en el mismo proyecto
+  @@map("project_collaborators")
 }
 
 model ExpenseCategory{
