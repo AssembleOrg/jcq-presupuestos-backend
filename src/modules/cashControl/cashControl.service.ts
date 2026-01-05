@@ -123,7 +123,8 @@ export class CashControlService{
 
     const expenses = await this.prisma.expense.findMany({
         where,
-        orderBy:[ { date: 'desc' }, {createdAt: 'desc'} ]
+        orderBy:[ { date: 'desc' }, {createdAt: 'desc'} ],
+        include: { category: true }
     });
 
     return plainToInstance (ExpenseResponseDTO,expenses,{ excludeExtraneousValues: true })
@@ -206,6 +207,7 @@ export class CashControlService{
             skip,
             take: limit,
             orderBy: [ { date:'desc' }, { createdAt: 'desc' }],
+            include: { category: true }
           }),
           this.prisma.expense.count({ where }),
         ]);
