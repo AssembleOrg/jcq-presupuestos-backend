@@ -66,22 +66,21 @@ export class StructuresController {
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
     @ApiOperation({
         summary: 'Obtener estructuras con paginación',
-        description: 'Filtra por: nombre y categoría (todas búsquedas parciales, case insensitive)'
+        description: 'Filtra por: nombre y categoría (búsqueda exacta para categoría)'
     })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página', example: 1 })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Registros por página', example: 10 })
     @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nombre (parcial)' })
-    @ApiQuery({ name: 'category', required: false, type: String, description: 'Buscar por categoria (parcial)' })
+    @ApiQuery({ name: 'category', required: false, type: String, description: 'Filtrar por categoría exacta (CATEGORY_A, CATEGORY_B, CATEGORY_C)' })
     @ApiResponse({
         status: 200,
         description: 'Lista paginada de estructuras filtradas',
     })
-    async findAllPaginated(
-        @Query() paginationQuery: PaginationQueryDto,
-        @Query() filters: FilterStructureDto
-    ) {
-        return this.structuresService.findAllPaginated(paginationQuery, filters);
+    async findAllPaginated(@Query() filters: FilterStructureDto) {
+        const { page, limit, ...restFilters } = filters;
+        return this.structuresService.findAllPaginated({ page, limit }, restFilters);
     }
+
 
     @Get(':id')
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)

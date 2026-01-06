@@ -17,10 +17,13 @@ export class StructuresService {
       where.name = { contains: filters.name, mode: 'insensitive' };
     }
     if (filters.category) {
-      where.category = { contains: filters.category, mode: 'insensitive' };
+      // Para campos Enum, Prisma no permite 'mode: insensitive', solo comparación directa
+      where.category = filters.category;
     }
     return where;
   }
+
+
 
   async createStructure(createStructureDto: CreateStructureDto) {
     if (!createStructureDto.category) {
