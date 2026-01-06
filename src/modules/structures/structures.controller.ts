@@ -1,17 +1,17 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query, 
-  UseGuards,
-  UseInterceptors,
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    Query,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { StructuresService } from './structures.service';
-import { CreateStructureDto,FilterStructureDto,StructureResponseDto,UpdateStructureDto,} from './dto';
+import { CreateStructureDto, FilterStructureDto, StructureResponseDto, UpdateStructureDto, } from './dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { AuditInterceptor } from '~/common/interceptors';
@@ -25,8 +25,8 @@ import { PaginationQueryDto } from '~/modules/users/dto';
 @Controller('structures')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UseInterceptors(AuditInterceptor)
-export class StructuresController{
-    constructor (private readonly structuresService: StructuresService) {}
+export class StructuresController {
+    constructor(private readonly structuresService: StructuresService) { }
 
     @Post()
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
@@ -38,18 +38,18 @@ export class StructuresController{
         type: StructureResponseDto,
     })
     @ApiResponse({
-    status: 400,
-    description: 'Error en los datos proporcionados',
+        status: 400,
+        description: 'Error en los datos proporcionados',
     })
-    createStructure(@Body() createStructureDto: CreateStructureDto) : Promise<StructureResponseDto> {
-    return this.structuresService.createStructure(createStructureDto);
+    createStructure(@Body() createStructureDto: CreateStructureDto): Promise<StructureResponseDto> {
+        return this.structuresService.createStructure(createStructureDto);
     }
 
     @Get()
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
-    @ApiOperation({ 
-    summary: 'Obtener todas las estrucutras (sin paginación)',
-    description: 'Filtra por: nombre y categoría (todas búsquedas parciales, case insensitive)'
+    @ApiOperation({
+        summary: 'Obtener todas las estrucutras (sin paginación)',
+        description: 'Filtra por: nombre y categoría (todas búsquedas parciales, case insensitive)'
     })
     @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nombre (parcial)' })
     @ApiQuery({ name: 'category', required: false, type: String, description: 'Buscar por categoria (parcial)' })
@@ -59,7 +59,28 @@ export class StructuresController{
         type: [StructureResponseDto],
     })
     async findAll(@Query() filters: FilterStructureDto): Promise<StructureResponseDto[]> {
-    return this.structuresService.getAllStructures(filters);
+        return this.structuresService.getAllStructures(filters);
+    }
+
+    @Get('pagination')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+    @ApiOperation({
+        summary: 'Obtener estructuras con paginación',
+        description: 'Filtra por: nombre y categoría (todas búsquedas parciales, case insensitive)'
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página', example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Registros por página', example: 10 })
+    @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nombre (parcial)' })
+    @ApiQuery({ name: 'category', required: false, type: String, description: 'Buscar por categoria (parcial)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista paginada de estructuras filtradas',
+    })
+    async findAllPaginated(
+        @Query() paginationQuery: PaginationQueryDto,
+        @Query() filters: FilterStructureDto
+    ) {
+        return this.structuresService.findAllPaginated(paginationQuery, filters);
     }
 
     @Get(':id')
@@ -70,15 +91,15 @@ export class StructuresController{
         type: StructureResponseDto,
     })
     async findOne(@Param('id') id: string) {
-    return this.structuresService.getStructureById(id);
+        return this.structuresService.getStructureById(id);
     }
 
-    @Patch(':id') 
+    @Patch(':id')
     @Roles(UserRole.ADMIN, UserRole.MANAGER)
     @Auditory({ action: 'UPDATE', entity: 'Structure' })
     @ApiOperation({ summary: 'Actualizar datos de la estructura' })
-    updateStructure(@Param('id') id: string, @Body() updateStructureDto: UpdateStructureDto ) {
-    return this.structuresService.updateStructure(id, updateStructureDto);
+    updateStructure(@Param('id') id: string, @Body() updateStructureDto: UpdateStructureDto) {
+        return this.structuresService.updateStructure(id, updateStructureDto);
     }
 
     @Delete(':id')
@@ -99,10 +120,10 @@ export class StructuresController{
 
     @Get(':id/usage')
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN)
-    @ApiOperation({ 
-    summary: 'Obtener los proyectos que usan una estructura específica'
+    @ApiOperation({
+        summary: 'Obtener los proyectos que usan una estructura específica'
     })
     async findUsage(@Param('id') id: string) {
         return this.structuresService.findUsage(id);
-  }
+    }
 }
