@@ -1,5 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateStructureDto, StructureResponseDto, UpdateStructureDto, FilterStructureDto } from './dto';
+import {
+  CreateStructureDto,
+  StructureResponseDto,
+  UpdateStructureDto,
+  FilterStructureDto,
+  CreateStructureCategoryDto,
+  StructureCategoryResponseDto,
+  UpdateStructureCategoryDto,
+  FilterStructureCategoryDto
+} from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { plainToInstance } from 'class-transformer';
 import { DateTime } from 'luxon';
@@ -11,14 +20,120 @@ import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces'
 export class StructuresService {
   constructor(private readonly prisma: PrismaService) { }
 
+  // STRUCTURE CATEGORY METHODS
+
+  private buildWhereClauseCategory(filters: FilterStructureCategoryDto) {
+    const where: any = { deletedAt: null };
+    if (filters.name) {
+      where.name = { contains: filters.name, mode: 'insensitive' };
+    }
+    return where;
+  }
+
+  async createCategory(dto: CreateStructureCategoryDto): Promise<StructureCategoryResponseDto> {
+    if (!dto.name) {
+      throw new BadRequestException('El nombre de la categoría es obligatorio');
+    }
+
+    // Check for duplicate category name (case-insensitive)
+    const existingCategory = await this.prisma.structureCategory.findFirst({
+      where: {
+        name: { equals: dto.name, mode: 'insensitive' },
+        deletedAt: null
+      }
+    });
+    if (existingCategory) {
+      throw new BadRequestException(`Ya existe una categoría con el nombre "${dto.name}"`);
+    }
+
+    const category = await this.prisma.structureCategory.create({
+      data: dto
+    });
+    return plainToInstance(StructureCategoryResponseDto, category, { excludeExtraneousValues: true });
+  }
+
+  async getAllCategories(filters: FilterStructureCategoryDto = {}): Promise<StructureCategoryResponseDto[]> {
+    const where = this.buildWhereClauseCategory(filters);
+    const categories = await this.prisma.structureCategory.findMany({
+      where,
+      orderBy: { name: 'asc' }
+    });
+    return plainToInstance(StructureCategoryResponseDto, categories, { excludeExtraneousValues: true });
+  }
+
+  async getCategoryById(id: string): Promise<StructureCategoryResponseDto> {
+    const category = await this.prisma.structureCategory.findUnique({
+      where: { id, deletedAt: null }
+    });
+    if (!category) {
+      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+    }
+    return plainToInstance(StructureCategoryResponseDto, category, { excludeExtraneousValues: true });
+  }
+
+  async updateCategory(id: string, data: UpdateStructureCategoryDto): Promise<StructureCategoryResponseDto> {
+    const existing = await this.prisma.structureCategory.findUnique({
+      where: { id, deletedAt: null }
+    });
+    if (!existing) {
+      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+    }
+
+    // Check for duplicate category name if name is being updated (case-insensitive)
+    if (data.name) {
+      const duplicateCategory = await this.prisma.structureCategory.findFirst({
+        where: {
+          name: { equals: data.name, mode: 'insensitive' },
+          id: { not: id },
+          deletedAt: null
+        }
+      });
+      if (duplicateCategory) {
+        throw new BadRequestException(`Ya existe una categoría con el nombre "${data.name}"`);
+      }
+    }
+
+    const updated = await this.prisma.structureCategory.update({
+      where: { id },
+      data
+    });
+    return plainToInstance(StructureCategoryResponseDto, updated, { excludeExtraneousValues: true });
+  }
+
+  async deleteCategory(id: string): Promise<{ message: string }> {
+    const category = await this.prisma.structureCategory.findUnique({
+      where: { id, deletedAt: null }
+    });
+    if (!category) {
+      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+    }
+
+    // Check if there are structures using this category
+    const structuresCount = await this.prisma.structure.count({
+      where: { categoryId: id, deletedAt: null }
+    });
+    if (structuresCount > 0) {
+      throw new BadRequestException(`No se puede eliminar la categoría porque tiene ${structuresCount} estructura(s) asociada(s)`);
+    }
+
+    await this.prisma.structureCategory.update({
+      where: { id },
+      data: {
+        deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate(),
+      },
+    });
+    return { message: 'Categoría eliminada exitosamente' };
+  }
+
+  // STRUCTURE METHODS
+
   private buildWhereClause(filters: FilterStructureDto) {
     const where: any = { deletedAt: null };
     if (filters.name) {
       where.name = { contains: filters.name, mode: 'insensitive' };
     }
-    if (filters.category) {
-      // Para campos Enum, Prisma no permite 'mode: insensitive', solo comparación directa
-      where.category = filters.category;
+    if (filters.categoryId) {
+      where.categoryId = filters.categoryId;
     }
     return where;
   }
@@ -26,11 +141,34 @@ export class StructuresService {
 
 
   async createStructure(createStructureDto: CreateStructureDto) {
-    if (!createStructureDto.category) {
+    if (!createStructureDto.categoryId) {
       throw new BadRequestException('La categoría es obligatoria');
     }
+
+    // Verify category exists
+    const category = await this.prisma.structureCategory.findUnique({
+      where: { id: createStructureDto.categoryId, deletedAt: null }
+    });
+    if (!category) {
+      throw new BadRequestException('La categoría especificada no existe');
+    }
+
+    // Check for duplicate structure with same name AND measure (case-insensitive name)
+    const existingStructure = await this.prisma.structure.findFirst({
+      where: {
+        name: { equals: createStructureDto.name, mode: 'insensitive' },
+        measure: createStructureDto.measure || null,
+        deletedAt: null
+      }
+    });
+    if (existingStructure) {
+      const measureText = createStructureDto.measure ? ` y medida "${createStructureDto.measure}"` : '';
+      throw new BadRequestException(`Ya existe una estructura con el nombre "${createStructureDto.name}"${measureText}`);
+    }
+
     const structure = await this.prisma.structure.create({
-      data: createStructureDto
+      data: createStructureDto,
+      include: { category: true }
     });
     return this.mapToResponse(structure, 0);
   }
@@ -41,6 +179,7 @@ export class StructuresService {
     const structures = await this.prisma.structure.findMany({
       where,
       include: {
+        category: true,
         items: {
           where: {
             project: {
@@ -70,6 +209,7 @@ export class StructuresService {
         skip,
         take: limit,
         include: {
+          category: true,
           items: {
             where: {
               project: {
@@ -99,6 +239,7 @@ export class StructuresService {
     const structure = await this.prisma.structure.findUnique({
       where: { id, deletedAt: null },
       include: {
+        category: true,
         items: {
           where: {
             project: {
@@ -153,10 +294,40 @@ export class StructuresService {
       throw new NotFoundException(`Estructura con ID ${id} no encontrada`);
     }
 
+    // If updating categoryId, verify the new category exists
+    if (data.categoryId) {
+      const category = await this.prisma.structureCategory.findUnique({
+        where: { id: data.categoryId, deletedAt: null }
+      });
+      if (!category) {
+        throw new BadRequestException('La categoría especificada no existe');
+      }
+    }
+
+    // Check for duplicate structure with same name AND measure if name or measure is being updated
+    if (data.name || data.measure !== undefined) {
+      const newName = data.name || existingStructure.name;
+      const newMeasure = data.measure !== undefined ? (data.measure || null) : existingStructure.measure;
+
+      const duplicateStructure = await this.prisma.structure.findFirst({
+        where: {
+          name: { equals: newName, mode: 'insensitive' },
+          measure: newMeasure,
+          id: { not: id },
+          deletedAt: null
+        }
+      });
+      if (duplicateStructure) {
+        const measureText = newMeasure ? ` y medida "${newMeasure}"` : '';
+        throw new BadRequestException(`Ya existe una estructura con el nombre "${newName}"${measureText}`);
+      }
+    }
+
     const updatedStructure = await this.prisma.structure.update({
       where: { id },
       data: data,
       include: {
+        category: true,
         items: {
           where: {
             project: { status: { in: [ProjectStatus.ACTIVE, ProjectStatus.IN_PROCESS] } }
