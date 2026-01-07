@@ -11,7 +11,16 @@ import {
     UseInterceptors,
 } from '@nestjs/common';
 import { StructuresService } from './structures.service';
-import { CreateStructureDto, FilterStructureDto, StructureResponseDto, UpdateStructureDto, } from './dto';
+import {
+    CreateStructureDto,
+    FilterStructureDto,
+    StructureResponseDto,
+    UpdateStructureDto,
+    CreateStructureCategoryDto,
+    StructureCategoryResponseDto,
+    UpdateStructureCategoryDto,
+    FilterStructureCategoryDto
+} from './dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { AuditInterceptor } from '~/common/interceptors';
@@ -27,6 +36,71 @@ import { PaginationQueryDto } from '~/modules/users/dto';
 @UseInterceptors(AuditInterceptor)
 export class StructuresController {
     constructor(private readonly structuresService: StructuresService) { }
+
+    // STRUCTURE CATEGORY ENDPOINTS
+
+    @Post('categories')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+    @Auditory({ action: 'CREATE', entity: 'StructureCategory' })
+    @ApiOperation({ summary: 'Crear categoría de estructura' })
+    @ApiResponse({
+        status: 201,
+        description: 'Categoría creada exitosamente',
+        type: StructureCategoryResponseDto,
+    })
+    createCategory(@Body() dto: CreateStructureCategoryDto): Promise<StructureCategoryResponseDto> {
+        return this.structuresService.createCategory(dto);
+    }
+
+    @Get('categories')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+    @ApiOperation({ summary: 'Obtener todas las categorías de estructura' })
+    @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nombre (parcial)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista de categorías',
+        type: [StructureCategoryResponseDto],
+    })
+    findAllCategories(@Query() filters: FilterStructureCategoryDto): Promise<StructureCategoryResponseDto[]> {
+        return this.structuresService.getAllCategories(filters);
+    }
+
+    @Get('categories/:id')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+    @ApiOperation({ summary: 'Obtener una categoría por ID' })
+    @ApiResponse({
+        status: 200,
+        type: StructureCategoryResponseDto,
+    })
+    findOneCategory(@Param('id') id: string): Promise<StructureCategoryResponseDto> {
+        return this.structuresService.getCategoryById(id);
+    }
+
+    @Patch('categories/:id')
+    @Roles(UserRole.ADMIN, UserRole.MANAGER)
+    @Auditory({ action: 'UPDATE', entity: 'StructureCategory' })
+    @ApiOperation({ summary: 'Actualizar categoría de estructura' })
+    @ApiResponse({
+        status: 200,
+        type: StructureCategoryResponseDto,
+    })
+    updateCategory(@Param('id') id: string, @Body() dto: UpdateStructureCategoryDto): Promise<StructureCategoryResponseDto> {
+        return this.structuresService.updateCategory(id, dto);
+    }
+
+    @Delete('categories/:id')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN)
+    @Auditory({ action: 'DELETE', entity: 'StructureCategory' })
+    @ApiOperation({ summary: 'Eliminar categoría de estructura (soft delete)' })
+    @ApiResponse({
+        status: 200,
+        description: 'Categoría eliminada exitosamente',
+    })
+    removeCategory(@Param('id') id: string) {
+        return this.structuresService.deleteCategory(id);
+    }
+
+    // STRUCTURE ENDPOINTS
 
     @Post()
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
@@ -48,11 +122,11 @@ export class StructuresController {
     @Get()
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
     @ApiOperation({
-        summary: 'Obtener todas las estrucutras (sin paginación)',
-        description: 'Filtra por: nombre y categoría (todas búsquedas parciales, case insensitive)'
+        summary: 'Obtener todas las estructuras (sin paginación)',
+        description: 'Filtra por: nombre y categoría'
     })
     @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nombre (parcial)' })
-    @ApiQuery({ name: 'category', required: false, type: String, description: 'Buscar por categoria (parcial)' })
+    @ApiQuery({ name: 'categoryId', required: false, type: String, description: 'Filtrar por ID de categoría' })
     @ApiResponse({
         status: 200,
         description: 'Lista completa de estructuras filtradas',
@@ -66,12 +140,12 @@ export class StructuresController {
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
     @ApiOperation({
         summary: 'Obtener estructuras con paginación',
-        description: 'Filtra por: nombre y categoría (búsqueda exacta para categoría)'
+        description: 'Filtra por: nombre y categoría'
     })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página', example: 1 })
     @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Registros por página', example: 10 })
     @ApiQuery({ name: 'name', required: false, type: String, description: 'Buscar por nombre (parcial)' })
-    @ApiQuery({ name: 'category', required: false, type: String, description: 'Filtrar por categoría exacta (CATEGORY_A, CATEGORY_B, CATEGORY_C)' })
+    @ApiQuery({ name: 'categoryId', required: false, type: String, description: 'Filtrar por ID de categoría' })
     @ApiResponse({
         status: 200,
         description: 'Lista paginada de estructuras filtradas',

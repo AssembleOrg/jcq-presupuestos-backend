@@ -200,10 +200,25 @@ model WorkRecord {
   deletedAt DateTime?
 }
 
-model Structure{
+model StructureCategory {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+
+  structures  Structure[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@map("structure_categories")
+}
+
+model Structure {
   id             String    @id @default(uuid())
   name           String 
-  category       StructureCategory
+  categoryId     String
+  category       StructureCategory @relation(fields: [categoryId], references: [id])
   stock          Float      //STOCK DISPONIBLE
   measure        String?    //Ej: "1,85x1M", "6,40mts", "30x30cm"
   description    String?    //Descripcion de la estructura
@@ -213,7 +228,9 @@ model Structure{
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  deletedAt DateTime? 
+  deletedAt DateTime?
+
+  @@index([categoryId])
 }
 
 model ProjectItem {
@@ -232,11 +249,7 @@ model ProjectItem {
   @@unique([projectId, structureId])
 }
 
-enum StructureCategory {
-  CATEGORY_A
-  CATEGORY_B
-  CATEGORY_C
-}
+
 
 model Budget {
   id             String    @id @default(uuid())
