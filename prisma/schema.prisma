@@ -274,6 +274,10 @@ model Budget {
   iibbPercentage Float?    // 1, 2, 3, 4, 5 (Se guarda el % seleccionado)
   iibbValue      Float?    // El valor monetario calculado de IIBB
 
+  hasUSD         Boolean   @default(false)
+  usdValue       Float?    // El valor monetario de USD
+  totalAmountUSD Float?    // El valor monetario total en USD
+
   totalAmount    Float     // Total Final = netAmount + iva + iibb
 
   createdAt      DateTime  @default(now())
