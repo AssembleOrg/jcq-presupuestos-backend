@@ -134,6 +134,10 @@ model Paid {
   
   projectId   String
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  hasUSD      Boolean        @default(false)  // Si el pago está cotizado en USD
+  usdValue    Float?         // Valor del dólar al momento del pago
+  amountUSD   Float?         // Monto total en USD
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
