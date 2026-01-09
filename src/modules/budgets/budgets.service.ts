@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '~/prisma';
 import { CreateBudgetDto, BudgetResponseDto, FilterBudgetDto, UpdateBudgetDto } from './dto';
-import { PaginationQueryDto } from '~/modules/users/dto'; 
+import { PaginationQueryDto } from '~/modules/users/dto';
 import { plainToInstance } from 'class-transformer';
-import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces'; 
+import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces';
 import { DateTime } from 'luxon';
 
 @Injectable()
 export class BudgetsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private buildWhereClause(filters: FilterBudgetDto) {
     const where: any = { deletedAt: null };
@@ -16,7 +16,7 @@ export class BudgetsService {
     // Cliente de la DB 
     if (filters.clientName) {
       where.client = {
-        fullname: { contains: filters.clientName, mode: 'insensitive' }, 
+        fullname: { contains: filters.clientName, mode: 'insensitive' },
       };
     }
 
@@ -55,6 +55,8 @@ export class BudgetsService {
       ivaPercentage,
       hasIibb,
       iibbPercentage,
+      hasUSD,
+      usdValue,
       items,
       ...restData
     } = createBudgetDto;
@@ -64,12 +66,18 @@ export class BudgetsService {
       ivaValue = netAmount * (ivaPercentage / 100);
     }
 
-    let iibbValue = 0; 
+    let iibbValue = 0;
     if (hasIibb && iibbPercentage) {
       iibbValue = netAmount * (iibbPercentage / 100);
     }
 
     const totalAmount = netAmount + ivaValue + iibbValue;
+
+    // Calcular monto total en USD si aplica
+    let totalAmountUSD: number | null = null;
+    if (hasUSD && usdValue && usdValue > 0) {
+      totalAmountUSD = totalAmount / usdValue;
+    }
 
     const budget = await this.prisma.budget.create({
       data: {
@@ -80,8 +88,11 @@ export class BudgetsService {
         ivaValue,
         hasIibb,
         iibbPercentage: hasIibb ? iibbPercentage : 0,
-        iibbValue, 
+        iibbValue,
         totalAmount,
+        hasUSD,
+        usdValue: hasUSD ? usdValue : null,
+        totalAmountUSD,
 
         items: {
           create: items.map((item) => ({
@@ -109,15 +120,15 @@ export class BudgetsService {
       where,
       include: {
         items: {
-          include: { structure: true }, 
+          include: { structure: true },
         },
-        client: true, 
+        client: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 20, // CONSULTAR RESPECTO A LA PAGINACION, POR AHORA LIMIE EN 20
     });
 
-    return plainToInstance(BudgetResponseDto, budgets, {excludeExtraneousValues: true,}) as unknown as BudgetResponseDto[];
+    return plainToInstance(BudgetResponseDto, budgets, { excludeExtraneousValues: true, }) as unknown as BudgetResponseDto[];
   }
 
   async findOneBudget(id: string): Promise<BudgetResponseDto> {
@@ -139,11 +150,11 @@ export class BudgetsService {
     return plainToInstance(BudgetResponseDto, budget, { excludeExtraneousValues: true });
   }
 
- 
+
   async updateBudget(id: string, updateBudgetDto: UpdateBudgetDto): Promise<BudgetResponseDto> {
     const budget = await this.prisma.budget.findFirst({
       where: { id, deletedAt: null },
-      include: { items: true }, 
+      include: { items: true },
     });
 
     if (!budget) {
@@ -157,35 +168,46 @@ export class BudgetsService {
     const ivaPercentage = headerUpdates.ivaPercentage ?? budget.ivaPercentage;
     const hasIibb = headerUpdates.hasIibb ?? budget.hasIibb;
     const iibbPercentage = headerUpdates.iibbPercentage ?? budget.iibbPercentage;
+    const hasUSD = headerUpdates.hasUSD ?? budget.hasUSD;
+    const usdValue = headerUpdates.usdValue ?? budget.usdValue;
 
     let ivaValue = 0;
     if (hasIva && ivaPercentage) {
-        ivaValue = netAmount * (ivaPercentage / 100);
+      ivaValue = netAmount * (ivaPercentage / 100);
     } else if (!hasIva) {
-        ivaValue = 0; 
+      ivaValue = 0;
     }
 
     let iibbValue = 0;
     if (hasIibb && iibbPercentage) {
-        iibbValue = netAmount * (iibbPercentage / 100);
+      iibbValue = netAmount * (iibbPercentage / 100);
     } else if (!hasIibb) {
-        iibbValue = 0;
+      iibbValue = 0;
     }
 
     const totalAmount = netAmount + ivaValue + iibbValue;
 
+    // Calcular monto total en USD si aplica
+    let totalAmountUSD: number | null = null;
+    if (hasUSD && usdValue && usdValue > 0) {
+      totalAmountUSD = totalAmount / usdValue;
+    }
+
     const updatedBudget = await this.prisma.budget.update({
       where: { id },
       data: {
-        ...headerUpdates, 
+        ...headerUpdates,
         netAmount,
         ivaValue,
         iibbValue,
         totalAmount,
+        hasUSD,
+        usdValue: hasUSD ? usdValue : null,
+        totalAmountUSD,
 
         ...(items && {
           items: {
-            deleteMany: {}, 
+            deleteMany: {},
             create: items.map((item) => ({
               quantity: item.quantity,
               structureId: item.structureId,
@@ -213,17 +235,18 @@ export class BudgetsService {
     }
 
     await this.prisma.$transaction([
-        this.prisma.budget.update({
+      this.prisma.budget.update({
         where: { id },
         data: { deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate() },
-        }),
+      }),
 
-        this.prisma.budgetItem.updateMany({
+      this.prisma.budgetItem.updateMany({
         where: { budgetId: id },
-        data: { deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate()},
-        }),
-  ]);
+        data: { deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate() },
+      }),
+    ]);
 
     return { message: 'Presupuesto eliminado exitosamente' };
   }
+
 }

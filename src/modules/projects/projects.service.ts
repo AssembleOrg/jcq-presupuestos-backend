@@ -8,14 +8,13 @@ import { DateTime } from 'luxon';
 import { ProjectStatus } from '@prisma/client';
 import { DolarService } from '~/common/services/dolar.service';
 import { CreateProjectItemDto, ProjectItemResponseDto } from '~/modules/structures/dto';
-import { AssignCollaboratorDto } from './dto/assign-collaborator.dto';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private dolarService: DolarService,
-  ) {}
+  ) { }
 
   private buildWhereClause(filters: FilterProjectDto) {
     const where: any = { deletedAt: null };
@@ -61,9 +60,9 @@ export class ProjectsService {
     return where;
   }
 
-async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
-    // Extraemos structures y collaborators del DTO para manejarlos por separado
-    const { structures, collaborators, ...projectData } = createProjectDto;
+  async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
+    // Extraemos structures, collaborators y USD del DTO para manejarlos por separado
+    const { structures, collaborators, hasUSD, usdValue, ...projectData } = createProjectDto;
 
     const client = await this.prisma.client.findFirst({
       where: {
@@ -85,6 +84,12 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
 
     const rest = createProjectDto.amount;
 
+    // Calcular monto en USD si aplica
+    let amountUSD: number | null = null;
+    if (hasUSD && usdValue && usdValue > 0) {
+      amountUSD = createProjectDto.amount / usdValue;
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // Se crea el proyecto base sin relaciones
       const project = await tx.project.create({
@@ -94,6 +99,9 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
           dateEnd,
           totalPaid: 0,
           rest,
+          hasUSD: hasUSD || false,
+          usdValue: hasUSD ? usdValue : null,
+          amountUSD,
         },
         include: {
           client: true,
@@ -179,7 +187,7 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
 
     const projects = await this.prisma.project.findMany({
       where,
-      include: { 
+      include: {
         client: true,
         items: {
           include: {
@@ -192,7 +200,7 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
           }
         }
       },
-      
+
       orderBy: { createdAt: 'desc' },
     });
 
@@ -210,7 +218,7 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
     const [projects, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
-        include: { 
+        include: {
           client: true,
           items: {
             include: {
@@ -219,7 +227,7 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
           },
           collaborators: {
             include: {
-              collaborator: true 
+              collaborator: true
             }
           }
         },
@@ -238,12 +246,12 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
 
   async findOne(id: string): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.findFirst({
-      where: { 
+      where: {
         id,
-        deletedAt: null 
+        deletedAt: null
       },
-      include: { 
-        client: true, 
+      include: {
+        client: true,
         paids: true,
         items: {
           include: {
@@ -252,7 +260,7 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
         },
         collaborators: {
           include: {
-            collaborator: true 
+            collaborator: true
           }
         }
       },
@@ -265,15 +273,15 @@ async create(createProjectDto: CreateProjectDto): Promise<ProjectResponseDto> {
     return plainToInstance(ProjectResponseDto, project, { excludeExtraneousValues: true });
   }
 
-async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectResponseDto> {
-    const { structures, collaborators, ...projectData } = updateProjectDto;
+  async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectResponseDto> {
+    const { structures, collaborators, hasUSD, usdValue, ...projectData } = updateProjectDto;
 
     const project = await this.prisma.project.findFirst({
       where: { id, deletedAt: null },
-      include: { 
+      include: {
         items: true,
         collaborators: true // Necesitamos ver qué colaboradores ya tiene asignados
-      } 
+      }
     });
 
     if (!project) {
@@ -298,8 +306,19 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
       dataToUpdate.rest = projectData.amount - project.totalPaid;
     }
 
+    // Manejar campos USD
+    const finalHasUSD = hasUSD ?? project.hasUSD;
+    const finalUsdValue = usdValue ?? project.usdValue;
+    const finalAmount = projectData.amount ?? project.amount;
+
+    dataToUpdate.hasUSD = finalHasUSD;
+    dataToUpdate.usdValue = finalHasUSD ? finalUsdValue : null;
+    dataToUpdate.amountUSD = (finalHasUSD && finalUsdValue && finalUsdValue > 0)
+      ? finalAmount / finalUsdValue
+      : null;
+
     return this.prisma.$transaction(async (tx) => {
-      
+
       // 1. Actualización básica del proyecto
       await tx.project.update({
         where: { id },
@@ -313,7 +332,7 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
           where: { projectId: id },
           include: { collaborator: true }
         });
-        
+
         const currentMap = new Map(currentAssignments.map(c => [c.collaboratorId, c]));
         const incomingIds = new Set(collaborators.map(c => c.collaboratorId));
 
@@ -350,7 +369,7 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
                 collaboratorId: item.collaboratorId,
                 workersCount: item.workersCount,
                 hoursCount: item.hoursCount,
-                valuePerHour: collabInfo.valuePerHour, 
+                valuePerHour: collabInfo.valuePerHour,
                 totalCost: item.workersCount * item.hoursCount * collabInfo.valuePerHour
               }
             });
@@ -375,11 +394,11 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
 
         for (const newItem of structures) {
           const currentQty = currentItemsMap.get(newItem.structureId) || 0;
-          const difference = newItem.quantity - currentQty; 
+          const difference = newItem.quantity - currentQty;
 
           if (difference !== 0) {
             const structure = await tx.structure.findUnique({ where: { id: newItem.structureId } });
-            
+
             if (!structure) throw new NotFoundException(`Estructura ${newItem.structureId} no encontrada`);
 
             if (difference > 0 && structure.stock < difference) {
@@ -427,7 +446,7 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
       // Devolver proyecto actualizado con todas las relaciones
       const updatedProject = await tx.project.findUnique({
         where: { id },
-        include: { 
+        include: {
           client: true,
           items: {
             include: { structure: true }
@@ -435,7 +454,7 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
           collaborators: {
             include: { collaborator: true }
           }
-         }, 
+        },
       });
 
       return plainToInstance(ProjectResponseDto, updatedProject, { excludeExtraneousValues: true });
@@ -444,9 +463,9 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
 
   async remove(id: string): Promise<{ message: string }> {
     const project = await this.prisma.project.findFirst({
-      where: { 
+      where: {
         id,
-        deletedAt: null 
+        deletedAt: null
       },
     });
 
@@ -510,9 +529,9 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
   // Cambiar estado del proyecto
   async changeStatus(id: string, changeStatusDto: ChangeProjectStatusDto): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.findFirst({
-      where: { 
+      where: {
         id,
-        deletedAt: null 
+        deletedAt: null
       },
       include: { client: true },
     });
@@ -530,7 +549,7 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
 
     // Si se está activando el proyecto (desde BUDGET o DELETED), obtener precio del dólar
     if (
-      changeStatusDto.status === ProjectStatus.ACTIVE && 
+      changeStatusDto.status === ProjectStatus.ACTIVE &&
       (project.status === ProjectStatus.BUDGET || project.status === ProjectStatus.DELETED)
     ) {
       try {
@@ -562,12 +581,12 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
           deletedAt: null,
         },
       }),
-      
+
       // Total de clientes
       this.prisma.client.count({
         where: { deletedAt: null },
       }),
-      
+
       // Proyectos para calcular totales (solo activos)
       this.prisma.project.findMany({
         where: {
@@ -579,7 +598,7 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
           rest: true,
         },
       }),
-      
+
       // Últimos 5 proyectos recientes (ordenados por fecha de creación)
       this.prisma.project.findMany({
         where: { deletedAt: null },
@@ -628,48 +647,48 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
   }
 
   async addStructure(projectId: string, createDto: CreateProjectItemDto): Promise<ProjectItemResponseDto> {
-  const { structureId, quantity } = createDto;
+    const { structureId, quantity } = createDto;
 
-  return this.prisma.$transaction(async (tx) => {
-    const structure = await tx.structure.findUnique({ where: { id: structureId } });
-    if (!structure) throw new NotFoundException('Estructura no encontrada');
+    return this.prisma.$transaction(async (tx) => {
+      const structure = await tx.structure.findUnique({ where: { id: structureId } });
+      if (!structure) throw new NotFoundException('Estructura no encontrada');
 
-    const existingItem = await tx.projectItem.findUnique({
-      where: { projectId_structureId: { projectId, structureId } },
+      const existingItem = await tx.projectItem.findUnique({
+        where: { projectId_structureId: { projectId, structureId } },
+      });
+
+      const currentQty = existingItem ? existingItem.quantity : 0;
+      const stockNeeded = quantity - currentQty;
+
+      if (stockNeeded > 0 && structure.stock < stockNeeded) {
+        throw new BadRequestException(
+          `Stock insuficiente. Disponibles: ${structure.stock}, Necesarios extra: ${stockNeeded}`
+        );
+      }
+
+      await tx.structure.update({
+        where: { id: structureId },
+        data: { stock: { decrement: stockNeeded } },
+      });
+
+      const item = await tx.projectItem.upsert({
+        where: { projectId_structureId: { projectId, structureId } },
+        update: { quantity: quantity },
+        create: { projectId, structureId, quantity },
+        include: { structure: true },
+      });
+
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        projectId: item.projectId,
+        structureId: item.structureId,
+        structureName: item.structure.measure
+          ? `${item.structure.name} (${item.structure.measure})`
+          : item.structure.name,
+      };
     });
-
-    const currentQty = existingItem ? existingItem.quantity : 0;
-    const stockNeeded = quantity - currentQty; 
-
-    if (stockNeeded > 0 && structure.stock < stockNeeded) {
-      throw new BadRequestException(
-        `Stock insuficiente. Disponibles: ${structure.stock}, Necesarios extra: ${stockNeeded}`
-      );
-    }
-
-    await tx.structure.update({
-      where: { id: structureId },
-      data: { stock: { decrement: stockNeeded } }, 
-    });
-
-    const item = await tx.projectItem.upsert({
-      where: { projectId_structureId: { projectId, structureId } },
-      update: { quantity: quantity }, 
-      create: { projectId, structureId, quantity },
-      include: { structure: true },
-    });
-
-    return {
-      id: item.id,
-      quantity: item.quantity,
-      projectId: item.projectId,
-      structureId: item.structureId,
-      structureName: item.structure.measure 
-      ? `${item.structure.name} (${item.structure.measure})` 
-      : item.structure.name, 
-    };
-  });
-}
+  }
 
   async findProjectItems(id: string): Promise<ProjectItemResponseDto[]> {
     const items = await this.prisma.projectItem.findMany({
@@ -682,68 +701,68 @@ async update(id: string, updateProjectDto: UpdateProjectDto): Promise<ProjectRes
       quantity: item.quantity,
       projectId: item.projectId,
       structureId: item.structureId,
-      structureName: item.structure.measure 
-      ? `${item.structure.name} (${item.structure.measure})` 
-      : item.structure.name,
+      structureName: item.structure.measure
+        ? `${item.structure.name} (${item.structure.measure})`
+        : item.structure.name,
     }));
   }
 
   async updateProjectItem(projectId: string, structureId: string, newQuantity: number): Promise<ProjectItemResponseDto> {
-  return this.prisma.$transaction(async (tx) => {
-    const currentItem = await tx.projectItem.findUnique({
-      where: { projectId_structureId: { projectId, structureId } },
-      include: { structure: true } 
+    return this.prisma.$transaction(async (tx) => {
+      const currentItem = await tx.projectItem.findUnique({
+        where: { projectId_structureId: { projectId, structureId } },
+        include: { structure: true }
+      });
+
+      if (!currentItem) throw new NotFoundException('El ítem no existe en este proyecto');
+
+      const difference = newQuantity - currentItem.quantity;
+      if (difference > 0 && currentItem.structure.stock < difference) {
+        throw new BadRequestException(`Stock insuficiente. Solo hay ${currentItem.structure.stock} disponibles.`);
+      }
+
+      await tx.structure.update({
+        where: { id: structureId },
+        data: { stock: { decrement: difference } },
+      });
+
+      const updatedItem = await tx.projectItem.update({
+        where: { projectId_structureId: { projectId, structureId } },
+        data: { quantity: newQuantity },
+        include: { structure: true },
+      });
+
+      return {
+        id: updatedItem.id,
+        quantity: updatedItem.quantity,
+        projectId: updatedItem.projectId,
+        structureId: updatedItem.structureId,
+        structureName: updatedItem.structure.measure
+          ? `${updatedItem.structure.name} (${updatedItem.structure.measure})`
+          : updatedItem.structure.name,
+      };
     });
-
-    if (!currentItem) throw new NotFoundException('El ítem no existe en este proyecto');
-
-    const difference = newQuantity - currentItem.quantity; 
-    if (difference > 0 && currentItem.structure.stock < difference) {
-      throw new BadRequestException(`Stock insuficiente. Solo hay ${currentItem.structure.stock} disponibles.`);
-    }
-
-    await tx.structure.update({
-      where: { id: structureId },
-      data: { stock: { decrement: difference } }, 
-    });
-
-    const updatedItem = await tx.projectItem.update({
-      where: { projectId_structureId: { projectId, structureId } },
-      data: { quantity: newQuantity },
-      include: { structure: true },
-    });
-
-    return {
-      id: updatedItem.id,
-      quantity: updatedItem.quantity,
-      projectId: updatedItem.projectId,
-      structureId: updatedItem.structureId,
-      structureName: updatedItem.structure.measure 
-        ? `${updatedItem.structure.name} (${updatedItem.structure.measure})` 
-        : updatedItem.structure.name,
-    };
-  });
-}
+  }
 
   async removeProjectItem(projectId: string, structureId: string): Promise<{ message: string }> {
-  return this.prisma.$transaction(async (tx) => {
-    const item = await tx.projectItem.findUnique({
-      where: { projectId_structureId: { projectId, structureId } },
+    return this.prisma.$transaction(async (tx) => {
+      const item = await tx.projectItem.findUnique({
+        where: { projectId_structureId: { projectId, structureId } },
+      });
+
+      if (!item) throw new NotFoundException('El ítem no existe');
+
+      await tx.structure.update({
+        where: { id: structureId },
+        data: { stock: { increment: item.quantity } },
+      });
+
+      await tx.projectItem.delete({
+        where: { projectId_structureId: { projectId, structureId } },
+      });
+
+      return { message: 'Ítem eliminado y stock restaurado correctamente' };
     });
-
-    if (!item) throw new NotFoundException('El ítem no existe');
-
-    await tx.structure.update({
-      where: { id: structureId },
-      data: { stock: { increment: item.quantity } },
-    });
-
-    await tx.projectItem.delete({
-      where: { projectId_structureId: { projectId, structureId } },
-    });
-
-    return { message: 'Ítem eliminado y stock restaurado correctamente' };
-  });
-}
+  }
 
 }
