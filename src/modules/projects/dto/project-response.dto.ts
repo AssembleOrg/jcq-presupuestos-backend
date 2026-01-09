@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type, Transform } from 'class-transformer'; 
+import { Expose, Type, Transform } from 'class-transformer';
 import { ClientResponseDto } from '~/modules/clients/dto';
 import { ProjectStatus } from '@prisma/client';
 import { ProjectItemResponseDto } from '~/modules/structures/dto';
@@ -70,12 +70,12 @@ export class ProjectResponseDto {
 
   @ApiProperty({ description: 'Alias de items para el frontend', type: [ProjectItemResponseDto] })
   @Expose()
-  @Transform(({ obj }) => obj.items || []) 
+  @Transform(({ obj }) => obj.items || [])
   structures: ProjectItemResponseDto[];
 
-  @ApiProperty({ 
-    description: 'Lista de colaboradores asignados', 
-    type: [ProjectCollaboratorResponseDto] 
+  @ApiProperty({
+    description: 'Lista de colaboradores asignados',
+    type: [ProjectCollaboratorResponseDto]
   })
   @Expose()
   @Type(() => ProjectCollaboratorResponseDto)
@@ -88,6 +88,18 @@ export class ProjectResponseDto {
   @ApiProperty({ description: 'Fecha de actualización' })
   @Expose()
   updatedAt: Date;
+
+  @ApiProperty({ description: 'Indica si el proyecto está cotizado en dólares' })
+  @Expose()
+  hasUSD: boolean;
+
+  @ApiPropertyOptional({ description: 'Valor del dólar utilizado' })
+  @Expose()
+  usdValue?: number;
+
+  @ApiPropertyOptional({ description: 'Monto total en USD' })
+  @Expose()
+  amountUSD?: number;
 
   @ApiPropertyOptional({ description: 'Fecha de eliminación' })
   @Expose()

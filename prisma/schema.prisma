@@ -109,6 +109,10 @@ model Project {
   dateEnd     DateTime       // Fecha de finalización del proyecto
   
   paids       Paid[]         // Pagos realizados
+
+  hasUSD      Boolean        @default(false)  // Si el proyecto está cotizado en USD
+  usdValue    Float?         // Valor del dólar utilizado
+  amountUSD   Float?         // Monto total en USD
   
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
