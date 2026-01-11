@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { DispatchItemResponseDTO } from './dispatch-item-response.dto';
 
-export class DisptachResponseDTO {
+export class DispatchResponseDTO {
     @ApiProperty({
         description: 'ID del despacho',
     })
