@@ -21,6 +21,7 @@ import { BudgetsModule } from './modules/budgets';
 import { CollaboratorsModule } from './modules/collaborators';
 import { CashControlModule } from './modules/cashControl';
 import { DolarService } from './common/services/dolar.service';
+import { DispatchModule } from './modules/dispatch';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { DolarService } from './common/services/dolar.service';
     BudgetsModule,
     CollaboratorsModule,
     CashControlModule,
+    DispatchModule,
   ],
   controllers: [AppController],
   providers: [
