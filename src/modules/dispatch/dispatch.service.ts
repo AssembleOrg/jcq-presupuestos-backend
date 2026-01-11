@@ -11,6 +11,8 @@ import {
 } from './dto';
 import { plainToInstance } from 'class-transformer';
 import { DateTime } from 'luxon';
+import { PaginationQueryDto } from '~/modules/users/dto';
+import { createPaginationMeta, PaginatedResponseDto } from '~/common/interfaces';
 
 @Injectable()
 export class DispatchService {
@@ -18,6 +20,10 @@ export class DispatchService {
 
     private buildWhereClause(filters: FilterDispatchDTO) {
         const where: any = { deletedAt: null };
+
+        if (filters.projectId) {
+            where.projectId = filters.projectId;
+        }
 
         if (filters.dateInit || filters.dateEnd) {
             where.createdAt = {};
@@ -127,6 +133,36 @@ export class DispatchService {
         });
 
         return plainToInstance(DispatchResponseDTO, dispatches, { excludeExtraneousValues: true });
+    }
+
+    async getAllDispatchesPaginated(
+        paginationQuery: PaginationQueryDto,
+        filters: FilterDispatchDTO = {}
+    ): Promise<PaginatedResponseDto<DispatchResponseDTO>> {
+        const { page = 1, limit = 10 } = paginationQuery;
+        const skip = (page - 1) * limit;
+        const where = this.buildWhereClause(filters);
+
+        const [dispatches, total] = await Promise.all([
+            this.prisma.dispatch.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    project: { include: { client: true } },
+                    items: {
+                        include: { projectItem: { include: { structure: true } } }
+                    },
+                },
+            }),
+            this.prisma.dispatch.count({ where }),
+        ]);
+
+        const data = plainToInstance(DispatchResponseDTO, dispatches, { excludeExtraneousValues: true });
+        const meta = createPaginationMeta(page, limit, total);
+
+        return { data, meta };
     }
 
     async deleteDispatch(id: string): Promise<{ message: string }> {

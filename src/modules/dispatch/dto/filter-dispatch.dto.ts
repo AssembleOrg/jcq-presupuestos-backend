@@ -1,7 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsDateString, IsUUID } from 'class-validator';
 
 export class FilterDispatchDTO {
+    @ApiPropertyOptional({
+        description: 'ID del proyecto',
+    })
+    @IsOptional()
+    @IsUUID()
+    projectId?: string;
+
     @ApiPropertyOptional({
         description: 'Fecha de inicio',
     })

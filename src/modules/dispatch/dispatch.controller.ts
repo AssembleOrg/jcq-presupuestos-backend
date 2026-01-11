@@ -25,6 +25,7 @@ import { JwtAuthGuard, RolesGuard } from '~/common/guards';
 import { Roles, Auditory } from '~/common/decorators';
 import { UserRole } from '@prisma/client';
 import { AuditInterceptor } from '~/common/interceptors';
+import { PaginationQueryDto } from '~/modules/users/dto';
 
 @ApiTags('Despachos')
 @ApiBearerAuth()
@@ -58,6 +59,7 @@ export class DispatchController {
         summary: 'Obtener todos los despachos',
         description: 'Lista todos los despachos con filtros opcionales'
     })
+    @ApiQuery({ name: 'projectId', required: false, type: String, description: 'ID del proyecto' })
     @ApiQuery({ name: 'dateInit', required: false, type: String, description: 'Fecha inicio (ISO)' })
     @ApiQuery({ name: 'dateEnd', required: false, type: String, description: 'Fecha fin (ISO)' })
     @ApiQuery({ name: 'driverCuit', required: false, type: String, description: 'CUIT del chofer' })
@@ -71,6 +73,32 @@ export class DispatchController {
     async findAll(@Query() filters: FilterDispatchDTO): Promise<DispatchResponseDTO[]> {
         return this.dispatchService.getAllDispatches(filters);
     }
+
+    @Get('pagination')
+    @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
+    @ApiOperation({
+        summary: 'Obtener despachos con paginación',
+        description: 'Lista despachos con paginación servidor-lado y filtros opcionales'
+    })
+    @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página', example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Registros por página', example: 10 })
+    @ApiQuery({ name: 'projectId', required: false, type: String, description: 'ID del proyecto' })
+    @ApiQuery({ name: 'dateInit', required: false, type: String, description: 'Fecha inicio (ISO)' })
+    @ApiQuery({ name: 'dateEnd', required: false, type: String, description: 'Fecha fin (ISO)' })
+    @ApiQuery({ name: 'driverCuit', required: false, type: String, description: 'CUIT del chofer' })
+    @ApiQuery({ name: 'licensePlate', required: false, type: String, description: 'Patente del vehículo' })
+    @ApiQuery({ name: 'clientName', required: false, type: String, description: 'Nombre del cliente' })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista paginada de despachos',
+    })
+    async findAllPaginated(
+        @Query() paginationQuery: PaginationQueryDto,
+        @Query() filters: FilterDispatchDTO
+    ) {
+        return this.dispatchService.getAllDispatchesPaginated(paginationQuery, filters);
+    }
+
 
     @Patch(':id')
     @Roles(UserRole.ADMIN, UserRole.SUBADMIN, UserRole.MANAGER)
