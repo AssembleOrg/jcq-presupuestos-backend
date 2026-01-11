@@ -1,9 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, ValidateNested, IsArray } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, ValidateNested, IsArray, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateDispatchItemDTO } from './create-dispatch-item.dto';
 
 export class CreateDispatchDTO {
+    @ApiProperty({
+        description: 'ID del proyecto asociado al despacho',
+        example: 'uuid-del-proyecto'
+    })
+    @IsNotEmpty({ message: 'El proyecto es obligatorio' })
+    @IsUUID('4', { message: 'El ID del proyecto debe ser un UUID válido' })
+    projectId: string;
+
     @ApiProperty({
         description: 'Nombre del chofer',
         example: 'Juan'

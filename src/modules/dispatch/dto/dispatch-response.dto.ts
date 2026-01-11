@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { DispatchItemResponseDTO } from './dispatch-item-response.dto';
+import { ProjectResponseDto } from '~/modules/projects/dto';
 
 export class DispatchResponseDTO {
     @ApiProperty({
@@ -8,6 +9,20 @@ export class DispatchResponseDTO {
     })
     @Expose()
     id: string;
+
+    @ApiProperty({
+        description: 'ID del proyecto asociado',
+    })
+    @Expose()
+    projectId: string;
+
+    @ApiProperty({
+        description: 'Proyecto asociado al despacho',
+        type: ProjectResponseDto
+    })
+    @Expose()
+    @Type(() => ProjectResponseDto)
+    project: ProjectResponseDto;
 
     @ApiProperty({
         description: 'Nombre del chofer',
