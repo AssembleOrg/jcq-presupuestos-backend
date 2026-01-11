@@ -3,7 +3,6 @@ import { Expose, Type, Transform } from 'class-transformer';
 import { ClientResponseDto } from '~/modules/clients/dto';
 import { ProjectStatus } from '@prisma/client';
 import { ProjectItemResponseDto } from '~/modules/structures/dto';
-import { CollaboratorResponseDTO } from '~/modules/collaborators/dto';
 import { ProjectCollaboratorResponseDto } from './project-collaborator-response.dto';
 
 export class ProjectResponseDto {

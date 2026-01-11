@@ -251,6 +251,8 @@ model ProjectItem {
   structureId String
   structure   Structure @relation(fields: [structureId], references: [id])
 
+  dispatchItems  DispatchItem[]
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -387,5 +389,35 @@ model Expense{
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
+}
+
+model Dispatch{
+  id                  String    @id @default(uuid())
+  firstName           String
+  lastName            String
+  cuit                String
+  licensePlate        String
+  notes               String?
+
+  items               DispatchItem[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+}
+
+model DispatchItem {
+  id          String    @id @default(uuid())
+  
+  quantity    Float       // CANTIDAD DE ESTA ESTRUCTURA QUE SE ENVIAN
+  
+  dispatchId  String
+  dispatch    Dispatch  @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  
+  projectItemId String
+  projectItem   ProjectItem @relation(fields: [projectItemId], references: [id])
+  
+  @@unique([dispatchId, projectItemId])
+  @@map("dispatch_items")
 }
 
