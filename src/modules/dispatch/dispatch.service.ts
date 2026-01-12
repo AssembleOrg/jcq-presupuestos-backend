@@ -61,22 +61,38 @@ export class DispatchService {
 
         const { items, ...dispatchData } = createDispatchDTO;
 
-        const dispatch = await this.prisma.dispatch.create({
-            data: {
-                ...dispatchData,
-                items: {
-                    create: items.map((item) => ({
-                        quantity: item.quantity,
-                        projectItemId: item.projectItemId,
-                    })),
+        // Use transaction to ensure both dispatch creation and quantity updates succeed together
+        const dispatch = await this.prisma.$transaction(async (tx) => {
+            // Create the dispatch with its items
+            const newDispatch = await tx.dispatch.create({
+                data: {
+                    ...dispatchData,
+                    items: {
+                        create: items.map((item) => ({
+                            quantity: item.quantity,
+                            projectItemId: item.projectItemId,
+                        })),
+                    },
                 },
-            },
-            include: {
-                project: { include: { client: true } },
-                items: {
-                    include: { projectItem: { include: { structure: true } } }
-                },
+                include: {
+                    project: { include: { client: true } },
+                    items: {
+                        include: { projectItem: { include: { structure: true } } }
+                    },
+                }
+            });
+
+            // Update dispatchedQuantity for each ProjectItem
+            for (const item of items) {
+                await tx.projectItem.update({
+                    where: { id: item.projectItemId },
+                    data: {
+                        dispatchedQuantity: { increment: item.quantity }
+                    }
+                });
             }
+
+            return newDispatch;
         });
 
         return plainToInstance(DispatchResponseDTO, dispatch, { excludeExtraneousValues: true });
@@ -167,23 +183,42 @@ export class DispatchService {
 
     async deleteDispatch(id: string): Promise<{ message: string }> {
         const dispatch = await this.prisma.dispatch.findUnique({
-            where: { id, deletedAt: null }
-        })
-
-        if (!dispatch) {
-            throw new NotFoundException(`Despacho con id ${id} no encontrado`)
-        }
-
-        await this.deleteAllDispatchItems(id)
-
-        await this.prisma.dispatch.update({
-            where: { id: id },
-            data: {
-                deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate(),
-            },
+            where: { id, deletedAt: null },
+            include: { items: true } // Include items to get quantities
         });
 
-        return { message: 'Despacho eliminado correctamente' }
+        if (!dispatch) {
+            throw new NotFoundException(`Despacho con id ${id} no encontrado`);
+        }
+
+        // Use transaction for consistency
+        await this.prisma.$transaction(async (tx) => {
+            // 1. Decrement dispatchedQuantity for each item
+            for (const item of dispatch.items) {
+                await tx.projectItem.update({
+                    where: { id: item.projectItemId },
+                    data: {
+                        dispatchedQuantity: { decrement: item.quantity }
+                    }
+                });
+            }
+
+            // 2. Soft delete items
+            await tx.dispatchItem.updateMany({
+                where: { dispatchId: id, deletedAt: null },
+                data: { deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate() }
+            });
+
+            // 3. Soft delete dispatch
+            await tx.dispatch.update({
+                where: { id: id },
+                data: {
+                    deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate(),
+                },
+            });
+        });
+
+        return { message: 'Despacho eliminado correctamente' };
     }
 
     //DispatchItems Methods
