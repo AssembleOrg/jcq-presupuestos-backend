@@ -395,6 +395,7 @@ model Expense{
 
 model Dispatch{
   id                  String    @id @default(uuid())
+  dispatchNumber      Int       @unique @default(autoincrement())   // Para pdf principalmente
   
   projectId           String
   project             Project   @relation(fields: [projectId], references: [id])

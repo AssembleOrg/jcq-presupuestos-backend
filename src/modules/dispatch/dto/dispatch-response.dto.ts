@@ -11,6 +11,12 @@ export class DispatchResponseDTO {
     id: string;
 
     @ApiProperty({
+        description: 'Número de remito autoincremental',
+    })
+    @Expose()
+    dispatchNumber: number;
+
+    @ApiProperty({
         description: 'ID del proyecto asociado',
     })
     @Expose()

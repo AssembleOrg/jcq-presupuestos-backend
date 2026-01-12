@@ -675,7 +675,7 @@ export class ProjectsService {
         where: { projectId_structureId: { projectId, structureId } },
         update: { quantity: quantity },
         create: { projectId, structureId, quantity },
-        include: { structure: true },
+        include: { structure: { include: { category: true } } },
       });
 
       return {
@@ -686,6 +686,18 @@ export class ProjectsService {
         structureName: item.structure.measure
           ? `${item.structure.name} (${item.structure.measure})`
           : item.structure.name,
+        structure: {
+          ...item.structure,
+          measure: item.structure.measure || undefined,
+          description: item.structure.description || undefined,
+          category: {
+            ...item.structure.category,
+            description: item.structure.category.description || undefined,
+            deletedAt: item.structure.category.deletedAt || undefined
+          },
+          inUse: 0,
+          available: item.structure.stock
+        },
       };
     });
   }
@@ -693,7 +705,7 @@ export class ProjectsService {
   async findProjectItems(id: string): Promise<ProjectItemResponseDto[]> {
     const items = await this.prisma.projectItem.findMany({
       where: { projectId: id },
-      include: { structure: true },
+      include: { structure: { include: { category: true } } },
     })
 
     return items.map(item => ({
@@ -704,6 +716,18 @@ export class ProjectsService {
       structureName: item.structure.measure
         ? `${item.structure.name} (${item.structure.measure})`
         : item.structure.name,
+      structure: {
+        ...item.structure,
+        measure: item.structure.measure || undefined,
+        description: item.structure.description || undefined,
+        category: {
+          ...item.structure.category,
+          description: item.structure.category.description || undefined,
+          deletedAt: item.structure.category.deletedAt || undefined
+        },
+        inUse: 0,
+        available: item.structure.stock
+      },
     }));
   }
 
@@ -711,7 +735,7 @@ export class ProjectsService {
     return this.prisma.$transaction(async (tx) => {
       const currentItem = await tx.projectItem.findUnique({
         where: { projectId_structureId: { projectId, structureId } },
-        include: { structure: true }
+        include: { structure: { include: { category: true } } }
       });
 
       if (!currentItem) throw new NotFoundException('El ítem no existe en este proyecto');
@@ -729,7 +753,7 @@ export class ProjectsService {
       const updatedItem = await tx.projectItem.update({
         where: { projectId_structureId: { projectId, structureId } },
         data: { quantity: newQuantity },
-        include: { structure: true },
+        include: { structure: { include: { category: true } } },
       });
 
       return {
@@ -740,6 +764,18 @@ export class ProjectsService {
         structureName: updatedItem.structure.measure
           ? `${updatedItem.structure.name} (${updatedItem.structure.measure})`
           : updatedItem.structure.name,
+        structure: {
+          ...updatedItem.structure,
+          measure: updatedItem.structure.measure || undefined,
+          description: updatedItem.structure.description || undefined,
+          category: {
+            ...updatedItem.structure.category,
+            description: updatedItem.structure.category.description || undefined,
+            deletedAt: updatedItem.structure.category.deletedAt || undefined
+          },
+          inUse: 0,
+          available: updatedItem.structure.stock
+        },
       };
     });
   }
