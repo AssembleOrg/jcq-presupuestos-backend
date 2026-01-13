@@ -275,6 +275,7 @@ model Budget {
   manualClientCuit String? 
   
   items          BudgetItem[]
+  descriptionItems BudgetDescriptionItem[]
 
   netAmount      Float     // Valor neto (Suma de items * precio)
   
@@ -317,6 +318,24 @@ model BudgetItem {
   deletedAt      DateTime?
 
   @@map("budget_items")
+}
+
+model BudgetDescriptionItem {
+  id             String    @id @default(uuid())
+  
+  title          String
+  quantity       Int       @default(1) // Cantidad (opcional, por defecto 1 si no se usa)
+  price          Float     // Precio unitario
+  unit           String?   // Unidad (e.g. "Por hora", "Global", "m2") -> Opcional
+  
+  budgetId       String
+  budget         Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@map("budget_description_items")
 }
 
 model Collaborator{                               //VALIDACIONES MUY IMPORTANTES EN DTO

@@ -3,6 +3,8 @@ import { Min, IsUUID, IsNumber, IsString, IsOptional, IsDateString, IsArray, Val
 import { Type } from 'class-transformer';
 import { CreateBudgetItemDto } from './create-budget-item.dto';
 
+import { CreateBudgetDescriptionItemDto } from './create-budget-description-item.dto';
+
 export class CreateBudgetDto {
   @ApiProperty({
     description: 'Fecha del presupuesto (formato ISO)',
@@ -45,6 +47,18 @@ export class CreateBudgetDto {
   @ValidateNested({ each: true }) // Valida cada objeto dentro del array
   @Type(() => CreateBudgetItemDto) // Convierte el JSON a la clase DTO
   items: CreateBudgetItemDto[];
+
+  @ApiPropertyOptional({
+    description: 'Lista de ítems descriptivos adicionales',
+    type: [CreateBudgetDescriptionItemDto],
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CreateBudgetDescriptionItemDto)
+  descriptionItems?: CreateBudgetDescriptionItemDto[];
+
+  // MONTO NETO
 
   // MONTO NETO
   @ApiProperty({
