@@ -18,13 +18,13 @@ export class CreateBudgetDescriptionItemDto {
     @Min(0, { message: 'El precio debe ser mayor o igual a 0' })
     price: number;
 
-    @ApiProperty({
-        description: 'Unidad de medida del ítem',
+    @ApiPropertyOptional({
+        description: 'Unidad de medida del ítem (opcional)',
         example: 'Por hora'
     })
     @IsString()
-    @IsNotEmpty({ message: 'La unidad es requerida' })
-    unit: string;
+    @IsOptional()
+    unit?: string;
 
     @ApiPropertyOptional({
         description: 'Cantidad (opcional, por defecto 1)',
