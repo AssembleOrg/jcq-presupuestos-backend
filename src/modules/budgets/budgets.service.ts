@@ -58,6 +58,7 @@ export class BudgetsService {
       hasUSD,
       usdValue,
       items,
+      descriptionItems,
       ...restData
     } = createBudgetDto;
 
@@ -101,11 +102,20 @@ export class BudgetsService {
             manualName: item.manualName,
           })),
         },
+        descriptionItems: {
+          create: descriptionItems?.map((item) => ({
+            title: item.title,
+            price: item.price,
+            unit: item.unit,
+            quantity: item.quantity ?? 1,
+          })),
+        },
       },
       include: {
         items: {
           include: { structure: true },
         },
+        descriptionItems: true,
         client: true,
       },
     });
@@ -122,6 +132,7 @@ export class BudgetsService {
         items: {
           include: { structure: true },
         },
+        descriptionItems: true,
         client: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -139,6 +150,7 @@ export class BudgetsService {
       },
       include: {
         items: { include: { structure: true } },
+        descriptionItems: true,
         client: true,
       },
     });
@@ -161,7 +173,7 @@ export class BudgetsService {
       throw new NotFoundException('Presupuesto no encontrado');
     }
 
-    const { items, ...headerUpdates } = updateBudgetDto;
+    const { items, descriptionItems, ...headerUpdates } = updateBudgetDto;
 
     const netAmount = headerUpdates.netAmount ?? budget.netAmount;
     const hasIva = headerUpdates.hasIva ?? budget.hasIva;
@@ -215,9 +227,21 @@ export class BudgetsService {
             })),
           },
         }),
+        ...(descriptionItems && {
+          descriptionItems: {
+            deleteMany: {},
+            create: descriptionItems.map((item) => ({
+              title: item.title,
+              price: item.price,
+              unit: item.unit,
+              quantity: item.quantity ?? 1,
+            })),
+          },
+        }),
       },
       include: {
         items: { include: { structure: true } },
+        descriptionItems: true,
         client: true,
       },
     });
@@ -241,6 +265,11 @@ export class BudgetsService {
       }),
 
       this.prisma.budgetItem.updateMany({
+        where: { budgetId: id },
+        data: { deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate() },
+      }),
+
+      this.prisma.budgetDescriptionItem.updateMany({
         where: { budgetId: id },
         data: { deletedAt: DateTime.now().setZone('America/Argentina/Buenos_Aires').toJSDate() },
       }),

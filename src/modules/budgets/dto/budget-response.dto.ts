@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { Type } from 'class-transformer';
 import { BudgetItemResponseDto } from './budget-item-response.dto';
+import { BudgetDescriptionItemResponseDto } from './budget-description-item-response.dto';
 import { ClientResponseDto } from '../../clients/dto/client-response.dto';
 
 export class BudgetResponseDto {
@@ -77,6 +78,11 @@ export class BudgetResponseDto {
     @Expose()
     @Type(() => BudgetItemResponseDto)
     items: BudgetItemResponseDto[];
+
+    @ApiPropertyOptional({ type: [BudgetDescriptionItemResponseDto] })
+    @Expose()
+    @Type(() => BudgetDescriptionItemResponseDto)
+    descriptionItems: BudgetDescriptionItemResponseDto[];
 
     @ApiProperty()
     @Expose()
