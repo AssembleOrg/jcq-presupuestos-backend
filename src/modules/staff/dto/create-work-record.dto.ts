@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsNotEmpty, IsNumber, IsUUID, Min } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsUUID, Min, IsOptional } from 'class-validator';
 
 export class CreateWorkRecordDto {
   @ApiProperty({
@@ -24,7 +24,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas realizadas el Lunes',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -101,7 +101,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Lunes',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -112,7 +112,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Martes',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -123,7 +123,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Miercoles',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -134,7 +134,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Jueves',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -145,7 +145,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Viernes',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -156,7 +156,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Sabado',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -167,7 +167,7 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas el Domingo',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
@@ -179,13 +179,24 @@ export class CreateWorkRecordDto {
   @ApiProperty({
     description: 'Pago correspondiente por horas extras realizadas de semana anterior',
     example: 8,
-    default: 0, 
+    default: 0,
     minimum: 0
   })
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   hoursLastWeek: number;
+
+  @ApiProperty({
+    description: 'Pago correspondiente por horas extras realizadas el Viernes de la semana anterior',
+    example: 8,
+    default: 0,
+    minimum: 0
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  hoursFridayLastWeek: number;
 
   @ApiProperty({
     description: 'Fecha de inicio del registro de trabajo (Lunes de la semana)',

@@ -97,7 +97,8 @@ export class StaffService {
       data.hoursFridayExtra +
       data.hoursSaturdayExtra +
       data.hoursSundayExtra +
-      data.hoursLastWeek;
+      data.hoursLastWeek +
+      (data.hoursFridayLastWeek || 0);
 
     const totalCalculation = total - data.advance;
 
@@ -140,7 +141,8 @@ export class StaffService {
     const hoursSaturdayExtra = changes.hoursSaturdayExtra ?? record.hoursSaturdayExtra
     const hoursSundayExtra = changes.hoursSundayExtra ?? record.hoursSundayExtra
 
-    const hoursLastWeek = changes.hoursLastWeek ?? record.hoursLastWeek
+    const hoursLastWeek = changes.hoursLastWeek ?? record.hoursLastWeek;
+    const hoursFridayLastWeek = changes.hoursFridayLastWeek ?? record.hoursFridayLastWeek ?? 0;
 
     const advance = changes.advance ?? record.advance;
 
@@ -158,7 +160,8 @@ export class StaffService {
       hoursFridayExtra +
       hoursSaturdayExtra +
       hoursSundayExtra +
-      hoursLastWeek;
+      hoursLastWeek +
+      hoursFridayLastWeek;
 
     const newTotal = totalHours - advance;
 

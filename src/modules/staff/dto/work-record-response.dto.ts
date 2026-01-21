@@ -74,6 +74,10 @@ export class WorkRecordResponseDto {
   @Expose()
   hoursLastWeek: number;
 
+  @ApiPropertyOptional({ description: 'Pago por horas extras trabajadas el viernes de la semana anterior' })
+  @Expose()
+  hoursFridayLastWeek: number;
+
   @ApiPropertyOptional({ description: 'Fecha de inicio del registro de trabajo' })
   @Expose()
   startDate: Date;
