@@ -193,6 +193,9 @@ model WorkRecord {
   hoursSaturdayExtra  Float  /// Luego borrar registros viejos para sacar este campo como Opcional y que pase a ser obligatorio
   hoursSundayExtra    Float
 
+  //Campo viernesExtra semana pasada 
+  hoursFridayLastWeek Float?
+
   //Horas extras que hacen el sabado o viernes, se lo pagan en la proxima liquidacion, por ende se agrega un campo mas
   hoursLastWeek       Float
   
